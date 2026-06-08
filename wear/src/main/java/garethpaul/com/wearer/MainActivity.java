@@ -10,12 +10,8 @@ import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.Wearable;
 
-import java.nio.charset.Charset;
-
 public class MainActivity extends Activity implements MessageApi.MessageListener, GoogleApiClient.ConnectionCallbacks {
 
-    private static final String WEAR_MESSAGE_PATH = "/message";
-    private static final Charset MESSAGE_CHARSET = Charset.forName("UTF-8");
     private GoogleApiClient mApiClient;
     private ArrayAdapter<String> mAdapter;
 
@@ -62,8 +58,8 @@ public class MainActivity extends Activity implements MessageApi.MessageListener
         runOnUiThread( new Runnable() {
             @Override
             public void run() {
-                if( messageEvent.getPath().equalsIgnoreCase( WEAR_MESSAGE_PATH ) ) {
-                    mAdapter.add(new String(messageEvent.getData(), MESSAGE_CHARSET));
+                if( WearMessage.isWearMessagePath(messageEvent.getPath()) ) {
+                    mAdapter.add(WearMessage.decode(messageEvent.getData()));
                     mAdapter.notifyDataSetChanged();
                 }
             }
@@ -78,8 +74,10 @@ public class MainActivity extends Activity implements MessageApi.MessageListener
     @Override
     protected void onStop() {
         if ( mApiClient != null ) {
-            Wearable.MessageApi.removeListener( mApiClient, this );
             if ( mApiClient.isConnected() ) {
+                Wearable.MessageApi.removeListener( mApiClient, this );
+                mApiClient.disconnect();
+            } else if ( mApiClient.isConnecting() ) {
                 mApiClient.disconnect();
             }
         }

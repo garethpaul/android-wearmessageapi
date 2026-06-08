@@ -11,19 +11,12 @@ import android.widget.EditText;
 import android.widget.ListView;
 
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 
-import java.nio.charset.Charset;
-
 
 public class MainActivity extends Activity implements GoogleApiClient.ConnectionCallbacks {
-
-    private static final String START_ACTIVITY = "/start_activity";
-    private static final String WEAR_MESSAGE_PATH = "/message";
-    private static final Charset MESSAGE_CHARSET = Charset.forName("UTF-8");
 
     private GoogleApiClient mApiClient;
 
@@ -78,7 +71,7 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
                     mAdapter.add(text);
                     mAdapter.notifyDataSetChanged();
 
-                    sendMessage(WEAR_MESSAGE_PATH, text);
+                    sendMessage(WearMessage.WEAR_MESSAGE_PATH, text);
                 }
             }
         });
@@ -88,10 +81,14 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
         new Thread( new Runnable() {
             @Override
             public void run() {
+                if (mApiClient == null || !mApiClient.isConnected()) {
+                    return;
+                }
+
                 NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes( mApiClient ).await();
                 for(Node node : nodes.getNodes()) {
                     Wearable.MessageApi.sendMessage(
-                            mApiClient, node.getId(), path, text.getBytes(MESSAGE_CHARSET) ).await();
+                            mApiClient, node.getId(), path, WearMessage.encode(text) ).await();
                 }
 
                 runOnUiThread( new Runnable() {
@@ -106,7 +103,7 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
 
     @Override
     public void onConnected(Bundle bundle) {
-        sendMessage(START_ACTIVITY, "");
+        sendMessage(WearMessage.START_ACTIVITY, "");
     }
 
     @Override

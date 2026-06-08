@@ -12,6 +12,7 @@ This project currently uses the original Android build stack:
 - compile SDK 21 / target SDK 21
 - Android build-tools 24.0.3
 - Google Play Services Wearable 7.0.0
+- JUnit 4.12 for module-local JVM tests
 
 Gradle resolves Android plugin artifacts from HTTPS Maven Central and Google
 Play Services artifacts from Google Maven.
@@ -46,8 +47,9 @@ ANDROID_HOME=/home/gjones/android-sdk ./gradlew test --no-daemon
 
 ## Modernization Notes
 
-The current baseline pins wearable dependencies, uses UTF-8 for message payload
-encoding/decoding, registers and unregisters mobile connection callbacks so the
+The current baseline pins wearable dependencies, keeps the mobile and wear
+modules on module-local `WearMessage` contracts, tests path/null handling and
+UTF-8 round trips, registers and unregisters mobile connection callbacks so the
 watch launch message can be sent, and keeps the legacy mobile/wear module
 layout. Future work should add paired-device verification, migrate away from
 deprecated Wearable Message APIs, and modernize SDK/dependency levels in a

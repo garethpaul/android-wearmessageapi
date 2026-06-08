@@ -8,6 +8,10 @@ WEAR_BUILD="$ROOT_DIR/wear/build.gradle"
 MOBILE_ACTIVITY="$ROOT_DIR/mobile/src/main/java/garethpaul/com/wearer/MainActivity.java"
 WEAR_ACTIVITY="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/MainActivity.java"
 WEAR_SERVICE="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/WearMessageListenerService.java"
+MOBILE_MESSAGE="$ROOT_DIR/mobile/src/main/java/garethpaul/com/wearer/WearMessage.java"
+WEAR_MESSAGE="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/WearMessage.java"
+MOBILE_MESSAGE_TEST="$ROOT_DIR/mobile/src/test/java/garethpaul/com/wearer/WearMessageTest.java"
+WEAR_MESSAGE_TEST="$ROOT_DIR/wear/src/test/java/garethpaul/com/wearer/WearMessageTest.java"
 
 for repo in "https://repo1.maven.org/maven2" "https://dl.google.com/dl/android/maven2"; do
   if ! grep -Fq "$repo" "$ROOT_BUILD"; then
@@ -43,6 +47,13 @@ if ! grep -Fq "com.google.android.gms:play-services-wearable:7.0.0" "$WEAR_BUILD
   exit 1
 fi
 
+for build_file in "$MOBILE_BUILD" "$WEAR_BUILD"; do
+  if ! grep -Fq "testCompile 'junit:junit:4.12'" "$build_file"; then
+    printf '%s\n' "Both modules must declare JUnit for WearMessage tests." >&2
+    exit 1
+  fi
+done
+
 if grep -Fq "com.google.android.support:wearable" "$WEAR_BUILD"; then
   printf '%s\n' "Unused wearable support dependency must not be reintroduced." >&2
   exit 1
@@ -63,28 +74,64 @@ if ! grep -Fq "mApiClient.isConnected() || mApiClient.isConnecting()" "$MOBILE_A
   exit 1
 fi
 
-if ! grep -Fq 'START_ACTIVITY = "/start_activity"' "$MOBILE_ACTIVITY"; then
-  printf '%s\n' "Mobile start-activity message path must remain documented." >&2
+if ! grep -Fq "mApiClient == null || !mApiClient.isConnected()" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile message sends must guard disconnected GoogleApiClient state." >&2
   exit 1
 fi
 
-if ! grep -Fq 'WEAR_MESSAGE_PATH = "/message"' "$MOBILE_ACTIVITY"; then
-  printf '%s\n' "Mobile message path must remain documented." >&2
+if ! grep -Fq "WearMessage.START_ACTIVITY" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile start-activity message must use the WearMessage contract." >&2
   exit 1
 fi
 
-if ! grep -Fq "Charset.forName(\"UTF-8\")" "$MOBILE_ACTIVITY"; then
+if ! grep -Fq "WearMessage.WEAR_MESSAGE_PATH" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile text messages must use the WearMessage contract." >&2
+  exit 1
+fi
+
+if ! grep -Fq "WearMessage.encode(text)" "$MOBILE_ACTIVITY"; then
   printf '%s\n' "Mobile messages must encode payloads as UTF-8." >&2
   exit 1
 fi
 
-if ! grep -Fq "new String(messageEvent.getData(), MESSAGE_CHARSET)" "$WEAR_ACTIVITY"; then
+if ! grep -Fq "WearMessage.decode(messageEvent.getData())" "$WEAR_ACTIVITY"; then
   printf '%s\n' "Wear messages must decode payloads as UTF-8." >&2
   exit 1
 fi
 
-if ! grep -Fq 'START_ACTIVITY = "/start_activity"' "$WEAR_SERVICE"; then
-  printf '%s\n' "Wear listener start-activity path must remain documented." >&2
+if ! grep -Fq "WearMessage.isStartActivityPath(messageEvent.getPath())" "$WEAR_SERVICE"; then
+  printf '%s\n' "Wear listener must use the WearMessage start path guard." >&2
+  exit 1
+fi
+
+for message_file in "$MOBILE_MESSAGE" "$WEAR_MESSAGE"; do
+  if ! grep -Fq 'START_ACTIVITY = "/start_activity"' "$message_file"; then
+    printf '%s\n' "WearMessage must preserve the start-activity path." >&2
+    exit 1
+  fi
+  if ! grep -Fq 'WEAR_MESSAGE_PATH = "/message"' "$message_file"; then
+    printf '%s\n' "WearMessage must preserve the text message path." >&2
+    exit 1
+  fi
+  if ! grep -Fq 'Charset.forName("UTF-8")' "$message_file"; then
+    printf '%s\n' "WearMessage must use explicit UTF-8 encoding." >&2
+    exit 1
+  fi
+  if ! grep -Fq "path != null && START_ACTIVITY.equalsIgnoreCase(path)" "$message_file"; then
+    printf '%s\n' "WearMessage must null-guard startup path checks." >&2
+    exit 1
+  fi
+done
+
+for test_file in "$MOBILE_MESSAGE_TEST" "$WEAR_MESSAGE_TEST"; do
+  if ! grep -Fq "encodesMessagesAsUtf8" "$test_file"; then
+    printf '%s\n' "WearMessage tests must cover UTF-8 round trips." >&2
+    exit 1
+  fi
+done
+
+if git -C "$ROOT_DIR" ls-files '.idea/*' '*.iml' | grep -q .; then
+  printf '%s\n' "Generated IDE metadata must not be tracked." >&2
   exit 1
 fi
 

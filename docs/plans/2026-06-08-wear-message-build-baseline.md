@@ -12,7 +12,8 @@ date: 2026-06-08
 Raise the baseline for the legacy mobile/wear message sample by making Gradle
 configure on the local SDK, pinning wearable dependencies, preserving message
 paths, registering the mobile connection callback, using explicit UTF-8 payloads,
-guarding mobile client cleanup, and documenting a source check.
+guarding mobile client cleanup, adding JVM tests for the message contract, and
+documenting a source check.
 
 ---
 
@@ -35,8 +36,9 @@ watch launch message from `onConnected`.
 - R4. The mobile `GoogleApiClient` must register and unregister connection callbacks so `onConnected` can send the start message without leaking callbacks after destroy.
 - R5. The mobile `GoogleApiClient` must unregister callbacks and disconnect during cleanup.
 - R6. Message payload encoding and decoding must use explicit UTF-8.
-- R7. The `/message` and `/start_activity` paths must remain explicit in source.
-- R8. The repository must include README verification notes and an SDK-free baseline check.
+- R7. The `/message` and `/start_activity` paths must remain explicit in module message contracts.
+- R8. Message path/null handling and UTF-8 payload round trips must have JVM test coverage.
+- R9. The repository must include README verification notes and an SDK-free baseline check.
 
 ---
 
@@ -76,14 +78,15 @@ watch launch message from `onConnected`.
 
 ### U2. Preserve Message Flow
 
-- **Goal:** Keep mobile-to-wear startup and text messaging explicit and deterministic.
-- **Files:** `mobile/src/main/java/garethpaul/com/wearer/MainActivity.java`, `wear/src/main/java/garethpaul/com/wearer/MainActivity.java`, `wear/src/main/java/garethpaul/com/wearer/WearMessageListenerService.java`
-- **Patterns:** Register and unregister connection callbacks, disconnect connected or connecting clients, keep path constants, encode/decode message payloads with UTF-8.
+- **Goal:** Keep mobile-to-wear startup and text messaging explicit, deterministic, and locally testable.
+- **Files:** `mobile/src/main/java/garethpaul/com/wearer/MainActivity.java`, `wear/src/main/java/garethpaul/com/wearer/MainActivity.java`, `wear/src/main/java/garethpaul/com/wearer/WearMessageListenerService.java`, `mobile/src/main/java/garethpaul/com/wearer/WearMessage.java`, `wear/src/main/java/garethpaul/com/wearer/WearMessage.java`, `mobile/src/test/java/garethpaul/com/wearer/WearMessageTest.java`, `wear/src/test/java/garethpaul/com/wearer/WearMessageTest.java`
+- **Patterns:** Register and unregister connection callbacks, disconnect connected or connecting clients, keep path constants in module-local message contracts, encode/decode message payloads with UTF-8, and cover path/null handling with JVM tests.
 - **Test Scenarios:**
   - Source check fails if callback registration or cleanup is removed.
-  - Source check fails if path constants are changed or hidden.
+  - Source check fails if path constants are changed or hidden from the message contracts.
   - Source check fails if default platform charset is used for message payloads.
-- **Verification:** `scripts/check-baseline.sh`, `./gradlew assembleDebug --no-daemon`
+  - JVM tests fail if path matching or UTF-8 round trips drift.
+- **Verification:** `scripts/check-baseline.sh`, `./gradlew assembleDebug --no-daemon`, `./gradlew test --no-daemon`
 
 ### U3. Document Baseline
 
