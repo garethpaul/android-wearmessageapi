@@ -1,5 +1,8 @@
 # Android Wear Message API
 
+<!-- README-OVERVIEW-IMAGE -->
+![Project overview](docs/readme-overview.svg)
+
 Legacy two-module Android sample that sends text from a mobile app to a Wear app
 through the Google Play Services Wearable Message API.
 
