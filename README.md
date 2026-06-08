@@ -49,7 +49,19 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 
 ## Testing and Verification
 
-- `./gradlew test` or Android Studio's test runner when the SDK is configured
+Run the SDK-free source baseline check first:
+
+```sh
+scripts/check-baseline.sh
+```
+
+Then run Gradle after Android SDK configuration is available:
+
+```sh
+ANDROID_HOME=/home/gjones/android-sdk ./gradlew lint --no-daemon
+ANDROID_HOME=/home/gjones/android-sdk ./gradlew test --no-daemon
+ANDROID_HOME=/home/gjones/android-sdk ./gradlew assembleDebug --no-daemon
+```
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
@@ -80,3 +92,12 @@ Prior README summary:
 
 > Android Wear Message API <!-- README-OVERVIEW-IMAGE --> Legacy two-module Android sample that sends text from a mobile app to a Wear app through the Google Play Services Wearable Message API. Toolchain This project currently uses the original Android build stack: - Gradle wrapper 2.2.1 - Android Gradle Plugin 1.1.0
 
+The current baseline pins wearable dependencies, keeps the mobile and wear
+modules on module-local `WearMessage` contracts, tests path/null handling and
+UTF-8 round trips, registers and unregisters mobile connection callbacks so the
+watch launch message can be sent, keeps the legacy mobile/wear module layout,
+and keeps the lint baseline explicit for the pinned SDK and dependency stack.
+Future work should add paired-device verification, migrate away from deprecated
+Wearable Message APIs, and modernize SDK/dependency levels in a dedicated pass.
+
+See `CHANGES.md` for the maintenance history.

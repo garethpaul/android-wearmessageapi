@@ -21,16 +21,26 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_alignParentBottom="true">
+        <TextView
+            android:id="@+id/input_label"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:labelFor="@+id/input"
+            android:paddingEnd="8dp"
+            android:paddingStart="0dp"
+            android:text="@string/message_input_label" />
         <EditText
             android:id="@+id/input"
             android:layout_width="0dp"
             android:layout_weight="4"
             android:layout_height="wrap_content"
+            android:hint="@string/message_input_hint"
             android:inputType="textNoSuggestions"
             />
         <Button
             android:id="@+id/btn_send"
-            android:text="Send"
+            android:text="@string/send_button"
             android:layout_weight="1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
