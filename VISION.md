@@ -48,3 +48,6 @@ platform APIs.
 - Broad wearable API migrations without paired-device verification notes
 - Dynamic dependency changes that make builds non-reproducible
 - Module restructuring that hides the mobile/wear message flow
+
+This list is a roadmap guardrail, not a permanent rule.
+Strong user demand and strong technical rationale can change it.
