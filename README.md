@@ -47,7 +47,8 @@ ANDROID_HOME=/home/gjones/android-sdk ./gradlew test --no-daemon
 ## Modernization Notes
 
 The current baseline pins wearable dependencies, uses UTF-8 for message payload
-encoding/decoding, registers mobile connection callbacks so the watch launch
-message can be sent, and keeps the legacy mobile/wear module layout. Future work
-should add paired-device verification, migrate away from deprecated Wearable
-Message APIs, and modernize SDK/dependency levels in a dedicated pass.
+encoding/decoding, registers and unregisters mobile connection callbacks so the
+watch launch message can be sent, and keeps the legacy mobile/wear module
+layout. Future work should add paired-device verification, migrate away from
+deprecated Wearable Message APIs, and modernize SDK/dependency levels in a
+dedicated pass.
