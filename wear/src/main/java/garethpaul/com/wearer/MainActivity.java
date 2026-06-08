@@ -10,9 +10,12 @@ import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.Wearable;
 
+import java.nio.charset.Charset;
+
 public class MainActivity extends Activity implements MessageApi.MessageListener, GoogleApiClient.ConnectionCallbacks {
 
     private static final String WEAR_MESSAGE_PATH = "/message";
+    private static final Charset MESSAGE_CHARSET = Charset.forName("UTF-8");
     private GoogleApiClient mApiClient;
     private ArrayAdapter<String> mAdapter;
 
@@ -60,7 +63,7 @@ public class MainActivity extends Activity implements MessageApi.MessageListener
             @Override
             public void run() {
                 if( messageEvent.getPath().equalsIgnoreCase( WEAR_MESSAGE_PATH ) ) {
-                    mAdapter.add(new String(messageEvent.getData()));
+                    mAdapter.add(new String(messageEvent.getData(), MESSAGE_CHARSET));
                     mAdapter.notifyDataSetChanged();
                 }
             }

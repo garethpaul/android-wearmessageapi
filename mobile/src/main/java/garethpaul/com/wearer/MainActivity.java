@@ -16,11 +16,14 @@ import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 
+import java.nio.charset.Charset;
+
 
 public class MainActivity extends Activity implements GoogleApiClient.ConnectionCallbacks {
 
     private static final String START_ACTIVITY = "/start_activity";
     private static final String WEAR_MESSAGE_PATH = "/message";
+    private static final Charset MESSAGE_CHARSET = Charset.forName("UTF-8");
 
     private GoogleApiClient mApiClient;
 
@@ -42,6 +45,7 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
     private void initGoogleApiClient() {
         mApiClient = new GoogleApiClient.Builder( this )
                 .addApi( Wearable.API )
+                .addConnectionCallbacks( this )
                 .build();
 
         mApiClient.connect();
@@ -50,7 +54,9 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mApiClient.disconnect();
+        if (mApiClient != null && mApiClient.isConnected()) {
+            mApiClient.disconnect();
+        }
     }
 
     private void init() {
@@ -82,7 +88,7 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
                 NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes( mApiClient ).await();
                 for(Node node : nodes.getNodes()) {
                     MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
-                            mApiClient, node.getId(), path, text.getBytes() ).await();
+                            mApiClient, node.getId(), path, text.getBytes(MESSAGE_CHARSET) ).await();
                 }
 
                 runOnUiThread( new Runnable() {
