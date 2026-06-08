@@ -88,19 +88,3 @@ When the required SDK or runtime is unavailable, use static checks and source re
 ## Contributing
 
 Keep changes small and tied to the project that is already present in this repository. For code changes, document the toolchain used, avoid committing generated dependency directories or local configuration, and update this README when setup or verification steps change.
-
-## Existing Project Notes
-
-Prior README summary:
-
-> Android Wear Message API Legacy two-module Android sample that sends text from a mobile app to a Wear app through the Google Play Services Wearable Message API. Toolchain This project currently uses the original Android build stack: - Gradle wrapper 2.2.1 - Android Gradle Plugin 1.1.0
-
-The current baseline pins wearable dependencies, keeps the mobile and wear
-modules on module-local `WearMessage` contracts, tests path/null handling and
-UTF-8 round trips, registers and unregisters mobile connection callbacks so the
-watch launch message can be sent, keeps the legacy mobile/wear module layout,
-and keeps the lint baseline explicit for the pinned SDK and dependency stack.
-Future work should add paired-device verification, migrate away from deprecated
-Wearable Message APIs, and modernize SDK/dependency levels in a dedicated pass.
-
-See `CHANGES.md` for the maintenance history.
