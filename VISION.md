@@ -39,7 +39,6 @@ Canonical security policy and reporting:
 
 - [`SECURITY.md`](SECURITY.md)
 
-
 Messages sent between devices may contain personal text. Do not add logging,
 analytics, or network forwarding of message payloads without explicit
 documentation and user control.
