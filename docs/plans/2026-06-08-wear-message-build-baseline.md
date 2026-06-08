@@ -12,7 +12,7 @@ date: 2026-06-08
 Raise the baseline for the legacy mobile/wear message sample by making Gradle
 configure on the local SDK, pinning wearable dependencies, preserving message
 paths, registering the mobile connection callback, using explicit UTF-8 payloads,
-and documenting a source check.
+guarding mobile client cleanup, and documenting a source check.
 
 ---
 
@@ -32,10 +32,11 @@ watch launch message from `onConnected`.
 - R1. Both mobile and wear modules must configure and assemble with the local Android SDK.
 - R2. Google Play Services dependencies must be pinned, not dynamic.
 - R3. Root repositories must use HTTPS Maven Central and Google Maven instead of JCenter.
-- R4. The mobile `GoogleApiClient` must register connection callbacks so `onConnected` can send the start message.
-- R5. Message payload encoding and decoding must use explicit UTF-8.
-- R6. The `/message` and `/start_activity` paths must remain explicit in source.
-- R7. The repository must include README verification notes and an SDK-free baseline check.
+- R4. The mobile `GoogleApiClient` must register and unregister connection callbacks so `onConnected` can send the start message without leaking callbacks after destroy.
+- R5. The mobile `GoogleApiClient` must unregister callbacks and disconnect during cleanup.
+- R6. Message payload encoding and decoding must use explicit UTF-8.
+- R7. The `/message` and `/start_activity` paths must remain explicit in source.
+- R8. The repository must include README verification notes and an SDK-free baseline check.
 
 ---
 
@@ -46,6 +47,8 @@ watch launch message from `onConnected`.
 - **Pin wearable dependency:** The mobile module only uses Wearable APIs, so `play-services-wearable:7.0.0` replaces broad dynamic `play-services:+`.
 - **Remove unused wearable support dependency:** Source does not reference support wearable widgets, so this dependency is unnecessary.
 - **Use explicit message charset:** UTF-8 keeps mobile/wear payload behavior deterministic across devices.
+- **Guard client cleanup:** Callback unregistration and connected/connecting
+  disconnect checks keep lifecycle behavior explicit.
 
 ---
 
@@ -75,9 +78,11 @@ watch launch message from `onConnected`.
 
 - **Goal:** Keep mobile-to-wear startup and text messaging explicit and deterministic.
 - **Files:** `mobile/src/main/java/garethpaul/com/wearer/MainActivity.java`, `wear/src/main/java/garethpaul/com/wearer/MainActivity.java`, `wear/src/main/java/garethpaul/com/wearer/WearMessageListenerService.java`
-- **Patterns:** Register connection callbacks, keep path constants, encode/decode message payloads with UTF-8.
+- **Patterns:** Register and unregister connection callbacks, disconnect connected or connecting clients, keep path constants, encode/decode message payloads with UTF-8.
+- **Patterns:** Register and unregister connection callbacks, keep path constants, encode/decode message payloads with UTF-8.
 - **Test Scenarios:**
-  - Source check fails if callback registration is removed.
+  - Source check fails if callback registration or cleanup is removed.
+  - Source check fails if callback cleanup is removed.
   - Source check fails if path constants are changed or hidden.
   - Source check fails if default platform charset is used for message payloads.
 - **Verification:** `scripts/check-baseline.sh`, `./gradlew assembleDebug --no-daemon`

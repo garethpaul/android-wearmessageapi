@@ -53,10 +53,13 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
-        if (mApiClient != null && mApiClient.isConnected()) {
-            mApiClient.disconnect();
+        if (mApiClient != null) {
+            mApiClient.unregisterConnectionCallbacks( this );
+            if (mApiClient.isConnected() || mApiClient.isConnecting()) {
+                mApiClient.disconnect();
+            }
         }
+        super.onDestroy();
     }
 
     private void init() {
@@ -87,7 +90,7 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
             public void run() {
                 NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes( mApiClient ).await();
                 for(Node node : nodes.getNodes()) {
-                    MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
+                    Wearable.MessageApi.sendMessage(
                             mApiClient, node.getId(), path, text.getBytes(MESSAGE_CHARSET) ).await();
                 }
 

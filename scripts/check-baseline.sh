@@ -53,6 +53,16 @@ if ! grep -Fq ".addConnectionCallbacks( this )" "$MOBILE_ACTIVITY"; then
   exit 1
 fi
 
+if ! grep -Fq "unregisterConnectionCallbacks( this )" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile GoogleApiClient callbacks must be unregistered." >&2
+  exit 1
+fi
+
+if ! grep -Fq "mApiClient.isConnected() || mApiClient.isConnecting()" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile GoogleApiClient cleanup must handle connected and connecting states." >&2
+  exit 1
+fi
+
 if ! grep -Fq 'START_ACTIVITY = "/start_activity"' "$MOBILE_ACTIVITY"; then
   printf '%s\n' "Mobile start-activity message path must remain documented." >&2
   exit 1
