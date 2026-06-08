@@ -42,7 +42,7 @@ documentation and user control.
 Wearable connection behavior should remain scoped to paired devices through the
 platform APIs.
 
-## What We Will Not Merge For Now
+## What We Will Not Merge (For Now)
 
 - Silent forwarding of wearable messages to external services
 - Broad wearable API migrations without paired-device verification notes
