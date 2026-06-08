@@ -1,5 +1,8 @@
 ## Android Wear Message API Vision
 
+This document explains the current state and direction of the project.
+Project overview and developer docs: [`README.md`](README.md)
+
 Android Wear Message API is a legacy mobile-and-watch sample for sending text
 messages between an Android handheld app and a Wear app through Google Play
 services wearable APIs.
