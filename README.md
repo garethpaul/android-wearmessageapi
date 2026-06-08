@@ -1,5 +1,8 @@
 # android-wearmessageapi
 
+<!-- README-OVERVIEW-IMAGE -->
+![Project overview](docs/readme-overview.svg)
+
 ## Overview
 
 `garethpaul/android-wearmessageapi` is an Android application or sample. Android Wear Message API Sample
