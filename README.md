@@ -93,7 +93,7 @@ Keep changes small and tied to the project that is already present in this repos
 
 Prior README summary:
 
-> Android Wear Message API <!-- README-OVERVIEW-IMAGE --> Legacy two-module Android sample that sends text from a mobile app to a Wear app through the Google Play Services Wearable Message API. Toolchain This project currently uses the original Android build stack: - Gradle wrapper 2.2.1 - Android Gradle Plugin 1.1.0
+> Android Wear Message API Legacy two-module Android sample that sends text from a mobile app to a Wear app through the Google Play Services Wearable Message API. Toolchain This project currently uses the original Android build stack: - Gradle wrapper 2.2.1 - Android Gradle Plugin 1.1.0
 
 The current baseline pins wearable dependencies, keeps the mobile and wear
 modules on module-local `WearMessage` contracts, tests path/null handling and
