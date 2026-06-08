@@ -21,6 +21,7 @@ MOBILE_MESSAGE="$ROOT_DIR/mobile/src/main/java/garethpaul/com/wearer/WearMessage
 WEAR_MESSAGE="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/WearMessage.java"
 MOBILE_MESSAGE_TEST="$ROOT_DIR/mobile/src/test/java/garethpaul/com/wearer/WearMessageTest.java"
 WEAR_MESSAGE_TEST="$ROOT_DIR/wear/src/test/java/garethpaul/com/wearer/WearMessageTest.java"
+NULL_PAYLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-08-wear-message-null-payloads.md"
 
 if [ ! -f "$ROOT_DIR/CHANGES.md" ]; then
   printf '%s\n' "CHANGES.md must document repository maintenance." >&2
@@ -29,6 +30,16 @@ fi
 
 if ! grep -Fq "Android Wear Message API Changes" "$ROOT_DIR/CHANGES.md"; then
   printf '%s\n' "CHANGES.md must identify the project." >&2
+  exit 1
+fi
+
+if [ ! -f "$NULL_PAYLOAD_PLAN" ]; then
+  printf '%s\n' "Wear message null payload plan is missing." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$NULL_PAYLOAD_PLAN" || ! grep -Fq "make check" "$NULL_PAYLOAD_PLAN"; then
+  printf '%s\n' "Wear message null payload plan must record completed status and make check verification." >&2
   exit 1
 fi
 
@@ -161,6 +172,14 @@ for message_file in "$MOBILE_MESSAGE" "$WEAR_MESSAGE"; do
     printf '%s\n' "WearMessage must use explicit UTF-8 encoding." >&2
     exit 1
   fi
+  if ! grep -Fq "if (text == null)" "$message_file"; then
+    printf '%s\n' "WearMessage must encode null text as an empty payload." >&2
+    exit 1
+  fi
+  if ! grep -Fq "if (data == null)" "$message_file"; then
+    printf '%s\n' "WearMessage must decode null payloads as empty text." >&2
+    exit 1
+  fi
   if ! grep -Fq "path != null && START_ACTIVITY.equalsIgnoreCase(path)" "$message_file"; then
     printf '%s\n' "WearMessage must null-guard startup path checks." >&2
     exit 1
@@ -170,6 +189,14 @@ done
 for test_file in "$MOBILE_MESSAGE_TEST" "$WEAR_MESSAGE_TEST"; do
   if ! grep -Fq "encodesMessagesAsUtf8" "$test_file"; then
     printf '%s\n' "WearMessage tests must cover UTF-8 round trips." >&2
+    exit 1
+  fi
+  if ! grep -Fq "encodesNullTextAsEmptyPayload" "$test_file"; then
+    printf '%s\n' "WearMessage tests must cover null text encoding." >&2
+    exit 1
+  fi
+  if ! grep -Fq "decodesNullPayloadAsEmptyText" "$test_file"; then
+    printf '%s\n' "WearMessage tests must cover null payload decoding." >&2
     exit 1
   fi
 done
@@ -231,6 +258,21 @@ fi
 
 if ! grep -Fq "scripts/check-baseline.sh" "$ROOT_DIR/README.md"; then
   printf '%s\n' "README must document the baseline check." >&2
+  exit 1
+fi
+
+if [ ! -f "$ROOT_DIR/Makefile" ]; then
+  printf '%s\n' "Makefile is missing." >&2
+  exit 1
+fi
+
+if ! grep -Fq "scripts/check-baseline.sh" "$ROOT_DIR/Makefile"; then
+  printf '%s\n' "Makefile must run the SDK-free baseline check." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$ROOT_DIR/README.md"; then
+  printf '%s\n' "README must document the make check wrapper." >&2
   exit 1
 fi
 

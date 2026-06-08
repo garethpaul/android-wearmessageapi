@@ -28,4 +28,14 @@ public class WearMessageTest {
 
         assertEquals(text, WearMessage.decode(WearMessage.encode(text)));
     }
+
+    @Test
+    public void encodesNullTextAsEmptyPayload() {
+        assertEquals(0, WearMessage.encode(null).length);
+    }
+
+    @Test
+    public void decodesNullPayloadAsEmptyText() {
+        assertEquals("", WearMessage.decode(null));
+    }
 }

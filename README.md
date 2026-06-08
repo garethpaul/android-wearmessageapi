@@ -42,6 +42,7 @@ Additional scan context:
 ```bash
 git clone https://github.com/garethpaul/android-wearmessageapi.git
 cd android-wearmessageapi
+make check
 ```
 
 The setup commands above are derived from repository files. Legacy mobile, Python, or JavaScript samples may require older SDKs or package versions than a modern workstation uses by default.
@@ -55,6 +56,7 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 Run the SDK-free source baseline check first:
 
 ```sh
+make check
 scripts/check-baseline.sh
 ```
 
@@ -82,8 +84,11 @@ When the required SDK or runtime is unavailable, use static checks and source re
 ## Maintenance Notes
 
 - This looks like a legacy Android project or sample. Expect Android SDK, Gradle, and support-library versions to matter.
+- The mobile and wear message helpers use explicit UTF-8 payloads and treat null
+  text or payloads as empty values.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
+- See `CHANGES.md` for the maintenance history.
 
 ## Contributing
 

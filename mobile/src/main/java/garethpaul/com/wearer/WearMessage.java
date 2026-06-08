@@ -11,10 +11,16 @@ final class WearMessage {
     }
 
     static byte[] encode(String text) {
+        if (text == null) {
+            return new byte[0];
+        }
         return text.getBytes(MESSAGE_CHARSET);
     }
 
     static String decode(byte[] data) {
+        if (data == null) {
+            return "";
+        }
         return new String(data, MESSAGE_CHARSET);
     }
 
