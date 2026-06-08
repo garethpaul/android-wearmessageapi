@@ -24,8 +24,9 @@ Helpful reports include:
 
 ## Project Security Posture
 
-- This repository appears to be a Android mobile application or sample. The active security scope is the code and documentation on the default branch.
+- This repository appears to be an Android mobile application or sample. The active security scope is the code and documentation on the default branch.
 - Review found network clients, sockets, web APIs, or service endpoints; changes in those areas should receive security-focused review before merge.
+- Review found mobile permission or privacy-sensitive data handling; changes in those areas should receive security-focused review before merge.
 - Review found file, document, data, or media parsing flows; changes in those areas should receive security-focused review before merge.
 - Dependency manifests detected: build.gradle, gradle.properties. Dependency updates should preserve lockfiles when present and avoid introducing packages without a clear maintenance reason.
 
