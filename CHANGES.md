@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Preserved mobile message text when no paired Wear node reports a successful
+  send result, with an SDK-free baseline guard for the send-success check.
 - Added a baseline gate for the null-safe, case-insensitive `/start_activity`
   and `/message` path contracts already covered by the mobile and wear unit
   tests.

@@ -11,6 +11,7 @@ import android.widget.EditText;
 import android.widget.ListView;
 
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
@@ -85,20 +86,28 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
                     return;
                 }
 
+                boolean messageSent = false;
                 NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes( mApiClient ).await();
-                for(Node node : nodes.getNodes()) {
-                    Wearable.MessageApi.sendMessage(
+                for (Node node : nodes.getNodes()) {
+                    MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
                             mApiClient, node.getId(), path, WearMessage.encode(text) ).await();
+                    messageSent = messageSent || result.getStatus().isSuccess();
                 }
 
-                runOnUiThread( new Runnable() {
-                    @Override
-                    public void run() {
-                        mEditText.setText( "" );
-                    }
-                });
+                if (messageSent) {
+                    clearMessageInput();
+                }
             }
         }).start();
+    }
+
+    private void clearMessageInput() {
+        runOnUiThread( new Runnable() {
+            @Override
+            public void run() {
+                mEditText.setText( "" );
+            }
+        });
     }
 
     @Override

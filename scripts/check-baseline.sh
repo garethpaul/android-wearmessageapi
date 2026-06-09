@@ -23,6 +23,7 @@ MOBILE_MESSAGE_TEST="$ROOT_DIR/mobile/src/test/java/garethpaul/com/wearer/WearMe
 WEAR_MESSAGE_TEST="$ROOT_DIR/wear/src/test/java/garethpaul/com/wearer/WearMessageTest.java"
 NULL_PAYLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-08-wear-message-null-payloads.md"
 PATH_CONTRACT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-message-path-contract-baseline.md"
+SEND_RESULT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-message-send-result-baseline.md"
 
 if [ ! -f "$ROOT_DIR/CHANGES.md" ]; then
   printf '%s\n' "CHANGES.md must document repository maintenance." >&2
@@ -51,6 +52,16 @@ fi
 
 if ! grep -Fq "Status: Completed" "$PATH_CONTRACT_PLAN" || ! grep -Fq "make check" "$PATH_CONTRACT_PLAN"; then
   printf '%s\n' "Wear message path contract plan must record completed status and make check verification." >&2
+  exit 1
+fi
+
+if [ ! -f "$SEND_RESULT_PLAN" ]; then
+  printf '%s\n' "Wear message send result plan is missing." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$SEND_RESULT_PLAN" || ! grep -Fq "make check" "$SEND_RESULT_PLAN"; then
+  printf '%s\n' "Wear message send result plan must record completed status and make check verification." >&2
   exit 1
 fi
 
@@ -157,6 +168,26 @@ fi
 
 if ! grep -Fq "WearMessage.encode(text)" "$MOBILE_ACTIVITY"; then
   printf '%s\n' "Mobile messages must encode payloads as UTF-8." >&2
+  exit 1
+fi
+
+if ! grep -Fq "MessageApi.SendMessageResult result" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile message sends must inspect the Wear message result." >&2
+  exit 1
+fi
+
+if ! grep -Fq "result.getStatus().isSuccess()" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile message input must clear only after a successful send." >&2
+  exit 1
+fi
+
+if ! grep -Fq "if (messageSent)" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile message sends must preserve text when no paired node accepts it." >&2
+  exit 1
+fi
+
+if ! grep -Fq "private void clearMessageInput()" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile input clearing must stay isolated behind the send-success guard." >&2
   exit 1
 fi
 

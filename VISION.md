@@ -20,6 +20,7 @@ Priority:
 - Preserve the mobile-to-wear message flow and `/message` path behavior
 - Keep the watch activity launch path easy to inspect
 - Keep message path matching null-safe and case-insensitive across modules
+- Preserve typed messages until at least one paired node accepts the send
 - Avoid changing Google Play services dependencies without documenting impact
 - Maintain the two-module project structure
 
@@ -46,6 +47,8 @@ Canonical security policy and reporting:
 Messages sent between devices may contain personal text. Do not add logging,
 analytics, or network forwarding of message payloads without explicit
 documentation and user control.
+Do not discard typed text on failed wearable sends unless the user explicitly
+chooses to clear it.
 
 Wearable connection behavior should remain scoped to paired devices through the
 platform APIs.
