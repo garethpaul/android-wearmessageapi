@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Guarded mobile input clearing after successful sends when lifecycle teardown
+  makes the input view unavailable.
 - Guarded the Wear listener service against null message events before checking
   start-activity paths.
 - Added root `make lint`, `make test`, and `make build` gates around the

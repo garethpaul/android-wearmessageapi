@@ -25,6 +25,7 @@ NULL_PAYLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-08-wear-message-null-payloads.md
 PATH_CONTRACT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-message-path-contract-baseline.md"
 SEND_RESULT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-message-send-result-baseline.md"
 WEAR_RECEIVER_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-message-receiver-lifecycle.md"
+MOBILE_CLEAR_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-mobile-clear-input-guard.md"
 
 if [ ! -f "$ROOT_DIR/CHANGES.md" ]; then
   printf '%s\n' "CHANGES.md must document repository maintenance." >&2
@@ -73,6 +74,16 @@ fi
 
 if ! grep -Fq "Status: Completed" "$WEAR_RECEIVER_PLAN" || ! grep -Fq "make check" "$WEAR_RECEIVER_PLAN"; then
   printf '%s\n' "Wear message receiver lifecycle plan must record completed status and make check verification." >&2
+  exit 1
+fi
+
+if [ ! -f "$MOBILE_CLEAR_PLAN" ]; then
+  printf '%s\n' "Wear mobile clear-input guard plan is missing." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$MOBILE_CLEAR_PLAN" || ! grep -Fq "make check" "$MOBILE_CLEAR_PLAN"; then
+  printf '%s\n' "Wear mobile clear-input guard plan must record completed status and make check verification." >&2
   exit 1
 fi
 
@@ -199,6 +210,11 @@ fi
 
 if ! grep -Fq "private void clearMessageInput()" "$MOBILE_ACTIVITY"; then
   printf '%s\n' "Mobile input clearing must stay isolated behind the send-success guard." >&2
+  exit 1
+fi
+
+if ! grep -Fq "if (mEditText == null)" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile input clearing must tolerate lifecycle races after send success." >&2
   exit 1
 fi
 
@@ -408,6 +424,11 @@ fi
 
 if ! grep -Fq "wear listener service ignores null message events" "$ROOT_DIR/README.md"; then
   printf '%s\n' "README must document wear listener null-event handling." >&2
+  exit 1
+fi
+
+if ! grep -Fq "mobile sender skips input clearing if the input view is unavailable" "$ROOT_DIR/README.md"; then
+  printf '%s\n' "README must document mobile clear-input lifecycle handling." >&2
   exit 1
 fi
 

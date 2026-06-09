@@ -102,6 +102,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   paths.
 - The mobile sender only clears typed text after at least one paired node
   accepts the Wear message.
+- The mobile sender skips input clearing if the input view is unavailable after
+  a successful send lifecycle race.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 - See `CHANGES.md` for the maintenance history.
@@ -113,6 +115,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   lint, test, and build gate contract.
 - See `docs/plans/2026-06-09-wear-listener-null-event-guard.md` for the wear
   listener service null-event guard.
+- See `docs/plans/2026-06-09-wear-mobile-clear-input-guard.md` for the mobile
+  clear-input lifecycle guard.
 
 ## Contributing
 

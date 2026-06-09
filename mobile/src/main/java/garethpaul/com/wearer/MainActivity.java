@@ -105,6 +105,10 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
         runOnUiThread( new Runnable() {
             @Override
             public void run() {
+                if (mEditText == null) {
+                    return;
+                }
+
                 mEditText.setText( "" );
             }
         });
