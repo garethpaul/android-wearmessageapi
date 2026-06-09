@@ -14,6 +14,10 @@ public class WearMessageListenerService extends WearableListenerService {
 
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
+        if( messageEvent == null ) {
+            return;
+        }
+
         if( WearMessage.isStartActivityPath(messageEvent.getPath()) ) {
             Intent intent = new Intent( this, MainActivity.class );
             intent.addFlags( Intent.FLAG_ACTIVITY_NEW_TASK );

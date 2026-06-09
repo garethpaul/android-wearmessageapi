@@ -232,6 +232,11 @@ if ! grep -Fq "WearMessage.isStartActivityPath(messageEvent.getPath())" "$WEAR_S
   exit 1
 fi
 
+if ! grep -Fq "if( messageEvent == null )" "$WEAR_SERVICE"; then
+  printf '%s\n' "Wear listener service must ignore null message events before path checks." >&2
+  exit 1
+fi
+
 for message_file in "$MOBILE_MESSAGE" "$WEAR_MESSAGE"; do
   if ! grep -Fq 'START_ACTIVITY = "/start_activity"' "$message_file"; then
     printf '%s\n' "WearMessage must preserve the start-activity path." >&2
@@ -398,6 +403,16 @@ fi
 
 if ! grep -Fq "CHANGES.md" "$ROOT_DIR/README.md"; then
   printf '%s\n' "README must point to CHANGES.md." >&2
+  exit 1
+fi
+
+if ! grep -Fq "wear listener service ignores null message events" "$ROOT_DIR/README.md"; then
+  printf '%s\n' "README must document wear listener null-event handling." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-wear-listener-null-event-guard.md"; then
+  printf '%s\n' "Wear listener null-event guard plan must document make check verification." >&2
   exit 1
 fi
 

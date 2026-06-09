@@ -98,6 +98,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   case-insensitive in both modules.
 - The wear receiver decodes accepted message payloads before UI dispatch and
   ignores callbacks when the list adapter is unavailable.
+- The wear listener service ignores null message events before checking launch
+  paths.
 - The mobile sender only clears typed text after at least one paired node
   accepts the Wear message.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
@@ -109,6 +111,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   send-result handling baseline.
 - See `docs/plans/2026-06-09-wear-message-make-gate-targets.md` for the root
   lint, test, and build gate contract.
+- See `docs/plans/2026-06-09-wear-listener-null-event-guard.md` for the wear
+  listener service null-event guard.
 
 ## Contributing
 
