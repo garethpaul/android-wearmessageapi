@@ -27,6 +27,7 @@ SEND_RESULT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-message-send-result-basel
 WEAR_RECEIVER_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-message-receiver-lifecycle.md"
 MOBILE_CLEAR_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-mobile-clear-input-guard.md"
 STARTUP_VIEW_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-startup-view-binding-guard.md"
+SEND_NODE_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-mobile-send-node-guard.md"
 
 if [ ! -f "$ROOT_DIR/CHANGES.md" ]; then
   printf '%s\n' "CHANGES.md must document repository maintenance." >&2
@@ -206,6 +207,21 @@ fi
 
 if ! grep -Fq "MessageApi.SendMessageResult result" "$MOBILE_ACTIVITY"; then
   printf '%s\n' "Mobile message sends must inspect the Wear message result." >&2
+  exit 1
+fi
+
+if ! grep -Fq "if (nodes == null || nodes.getNodes() == null)" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile message sends must guard missing connected-node results." >&2
+  exit 1
+fi
+
+if ! grep -Fq "if (node == null || node.getId() == null)" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile message sends must guard missing connected-node ids." >&2
+  exit 1
+fi
+
+if ! grep -Fq "result != null && result.getStatus() != null && result.getStatus().isSuccess()" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile message sends must guard null send results before checking status." >&2
   exit 1
 fi
 
@@ -478,8 +494,23 @@ if ! grep -Fq "mobile and wear activities validate required startup views before
   exit 1
 fi
 
+if ! grep -Fq "mobile sends guard missing connected-node results" "$ROOT_DIR/README.md"; then
+  printf '%s\n' "README must document mobile connected-node send guards." >&2
+  exit 1
+fi
+
 if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-wear-listener-null-event-guard.md"; then
   printf '%s\n' "Wear listener null-event guard plan must document make check verification." >&2
+  exit 1
+fi
+
+if [ ! -f "$SEND_NODE_GUARD_PLAN" ]; then
+  printf '%s\n' "Wear mobile send node guard plan is missing." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$SEND_NODE_GUARD_PLAN" || ! grep -Fq "make check" "$SEND_NODE_GUARD_PLAN"; then
+  printf '%s\n' "Wear mobile send node guard plan must record completed status and make check verification." >&2
   exit 1
 fi
 

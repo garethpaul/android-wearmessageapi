@@ -24,6 +24,7 @@ Priority:
 - Keep listener-service startup messages null-safe before path inspection
 - Preserve typed messages until at least one paired node accepts the send
 - Keep successful-send input cleanup tolerant of lifecycle teardown races
+- Keep mobile sends guarded when connected-node data is incomplete
 - Keep mobile and wear startup view binding checked before connecting Wear APIs
 - Keep root lint, test, and build gates wired to the two-module Gradle project
 - Avoid changing Google Play services dependencies without documenting impact

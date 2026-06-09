@@ -98,10 +98,20 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
 
                 boolean messageSent = false;
                 NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes( mApiClient ).await();
+                if (nodes == null || nodes.getNodes() == null) {
+                    return;
+                }
+
                 for (Node node : nodes.getNodes()) {
+                    if (node == null || node.getId() == null) {
+                        continue;
+                    }
+
                     MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
                             mApiClient, node.getId(), path, WearMessage.encode(text) ).await();
-                    messageSent = messageSent || result.getStatus().isSuccess();
+                    if (result != null && result.getStatus() != null && result.getStatus().isSuccess()) {
+                        messageSent = true;
+                    }
                 }
 
                 if (messageSent) {
