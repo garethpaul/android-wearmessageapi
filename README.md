@@ -88,11 +88,15 @@ When the required SDK or runtime is unavailable, use static checks and source re
   text or payloads as empty values.
 - The `/start_activity` and `/message` path helpers are null-safe and
   case-insensitive in both modules.
+- The wear receiver decodes accepted message payloads before UI dispatch and
+  ignores callbacks when the list adapter is unavailable.
 - The mobile sender only clears typed text after at least one paired node
   accepts the Wear message.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 - See `CHANGES.md` for the maintenance history.
+- See `docs/plans/2026-06-09-wear-message-receiver-lifecycle.md` for the wear
+  receiver lifecycle guard.
 - See `docs/plans/2026-06-09-wear-message-send-result-baseline.md` for the
   send-result handling baseline.
 

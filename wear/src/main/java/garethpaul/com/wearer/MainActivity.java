@@ -55,15 +55,26 @@ public class MainActivity extends Activity implements MessageApi.MessageListener
 
     @Override
     public void onMessageReceived( final MessageEvent messageEvent ) {
+        if( messageEvent == null || !WearMessage.isWearMessagePath(messageEvent.getPath()) ) {
+            return;
+        }
+
+        final String text = WearMessage.decode(messageEvent.getData());
         runOnUiThread( new Runnable() {
             @Override
             public void run() {
-                if( WearMessage.isWearMessagePath(messageEvent.getPath()) ) {
-                    mAdapter.add(WearMessage.decode(messageEvent.getData()));
-                    mAdapter.notifyDataSetChanged();
-                }
+                addWearMessage(text);
             }
         });
+    }
+
+    private void addWearMessage( String text ) {
+        if( mAdapter == null ) {
+            return;
+        }
+
+        mAdapter.add(text);
+        mAdapter.notifyDataSetChanged();
     }
 
     @Override

@@ -24,6 +24,7 @@ WEAR_MESSAGE_TEST="$ROOT_DIR/wear/src/test/java/garethpaul/com/wearer/WearMessag
 NULL_PAYLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-08-wear-message-null-payloads.md"
 PATH_CONTRACT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-message-path-contract-baseline.md"
 SEND_RESULT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-message-send-result-baseline.md"
+WEAR_RECEIVER_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-message-receiver-lifecycle.md"
 
 if [ ! -f "$ROOT_DIR/CHANGES.md" ]; then
   printf '%s\n' "CHANGES.md must document repository maintenance." >&2
@@ -62,6 +63,16 @@ fi
 
 if ! grep -Fq "status: completed" "$SEND_RESULT_PLAN" || ! grep -Fq "make check" "$SEND_RESULT_PLAN"; then
   printf '%s\n' "Wear message send result plan must record completed status and make check verification." >&2
+  exit 1
+fi
+
+if [ ! -f "$WEAR_RECEIVER_PLAN" ]; then
+  printf '%s\n' "Wear message receiver lifecycle plan is missing." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$WEAR_RECEIVER_PLAN" || ! grep -Fq "make check" "$WEAR_RECEIVER_PLAN"; then
+  printf '%s\n' "Wear message receiver lifecycle plan must record completed status and make check verification." >&2
   exit 1
 fi
 
@@ -193,6 +204,26 @@ fi
 
 if ! grep -Fq "WearMessage.decode(messageEvent.getData())" "$WEAR_ACTIVITY"; then
   printf '%s\n' "Wear messages must decode payloads as UTF-8." >&2
+  exit 1
+fi
+
+if ! grep -Fq "messageEvent == null || !WearMessage.isWearMessagePath(messageEvent.getPath())" "$WEAR_ACTIVITY"; then
+  printf '%s\n' "Wear message receiver must ignore null events and non-message paths before UI dispatch." >&2
+  exit 1
+fi
+
+if ! grep -Fq "final String text = WearMessage.decode(messageEvent.getData())" "$WEAR_ACTIVITY"; then
+  printf '%s\n' "Wear message receiver must decode payloads before posting UI work." >&2
+  exit 1
+fi
+
+if ! grep -Fq "private void addWearMessage( String text )" "$WEAR_ACTIVITY"; then
+  printf '%s\n' "Wear message receiver must isolate adapter updates behind a helper." >&2
+  exit 1
+fi
+
+if ! grep -Fq "if( mAdapter == null )" "$WEAR_ACTIVITY"; then
+  printf '%s\n' "Wear message receiver must tolerate callbacks when the adapter is unavailable." >&2
   exit 1
 fi
 
