@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Normalized mobile message input so blank or whitespace-only messages are not
+  added or sent.
 - Guarded mobile Wear message sends when connected-node results, node IDs, send
   results, or statuses are unavailable.
 - Guarded mobile and wear activity startup view binding so required controls are

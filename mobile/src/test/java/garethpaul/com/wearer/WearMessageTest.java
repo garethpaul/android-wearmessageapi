@@ -38,4 +38,11 @@ public class WearMessageTest {
     public void decodesNullPayloadAsEmptyText() {
         assertEquals("", WearMessage.decode(null));
     }
+
+    @Test
+    public void normalizesBlankMessageTextAsEmpty() {
+        assertEquals("", WearMessage.normalizeText(null));
+        assertEquals("", WearMessage.normalizeText("   "));
+        assertEquals("hello", WearMessage.normalizeText(" hello "));
+    }
 }

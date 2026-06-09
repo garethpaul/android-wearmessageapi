@@ -75,7 +75,7 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
         mSendButton.setOnClickListener( new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String text = mEditText.getText().toString();
+                String text = WearMessage.normalizeText(mEditText.getText());
                 if (!TextUtils.isEmpty(text)) {
                     mAdapter.add(text);
                     mAdapter.notifyDataSetChanged();

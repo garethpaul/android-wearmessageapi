@@ -28,6 +28,7 @@ WEAR_RECEIVER_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-message-receiver-lifecy
 MOBILE_CLEAR_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-mobile-clear-input-guard.md"
 STARTUP_VIEW_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-startup-view-binding-guard.md"
 SEND_NODE_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-mobile-send-node-guard.md"
+BLANK_MESSAGE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-mobile-blank-message-guard.md"
 
 if [ ! -f "$ROOT_DIR/CHANGES.md" ]; then
   printf '%s\n' "CHANGES.md must document repository maintenance." >&2
@@ -205,6 +206,11 @@ if ! grep -Fq "WearMessage.encode(text)" "$MOBILE_ACTIVITY"; then
   exit 1
 fi
 
+if ! grep -Fq "WearMessage.normalizeText(mEditText.getText())" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile sends must normalize typed text before empty-message checks." >&2
+  exit 1
+fi
+
 if ! grep -Fq "MessageApi.SendMessageResult result" "$MOBILE_ACTIVITY"; then
   printf '%s\n' "Mobile message sends must inspect the Wear message result." >&2
   exit 1
@@ -331,6 +337,14 @@ for message_file in "$MOBILE_MESSAGE" "$WEAR_MESSAGE"; do
     printf '%s\n' "WearMessage must decode null payloads as empty text." >&2
     exit 1
   fi
+  if ! grep -Fq "static String normalizeText(CharSequence text)" "$message_file"; then
+    printf '%s\n' "WearMessage must expose shared text normalization." >&2
+    exit 1
+  fi
+  if ! grep -Fq "text.toString().trim()" "$message_file"; then
+    printf '%s\n' "WearMessage text normalization must trim whitespace-only sends." >&2
+    exit 1
+  fi
   if ! grep -Fq "path != null && START_ACTIVITY.equalsIgnoreCase(path)" "$message_file"; then
     printf '%s\n' "WearMessage must null-guard startup path checks." >&2
     exit 1
@@ -360,6 +374,10 @@ for test_file in "$MOBILE_MESSAGE_TEST" "$WEAR_MESSAGE_TEST"; do
   fi
   if ! grep -Fq "decodesNullPayloadAsEmptyText" "$test_file"; then
     printf '%s\n' "WearMessage tests must cover null payload decoding." >&2
+    exit 1
+  fi
+  if ! grep -Fq "normalizesBlankMessageTextAsEmpty" "$test_file"; then
+    printf '%s\n' "WearMessage tests must cover blank text normalization." >&2
     exit 1
   fi
 done
@@ -499,6 +517,11 @@ if ! grep -Fq "mobile sends guard missing connected-node results" "$ROOT_DIR/REA
   exit 1
 fi
 
+if ! grep -Fq "mobile sender normalizes typed text and ignores whitespace-only messages" "$ROOT_DIR/README.md"; then
+  printf '%s\n' "README must document mobile blank-message handling." >&2
+  exit 1
+fi
+
 if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-wear-listener-null-event-guard.md"; then
   printf '%s\n' "Wear listener null-event guard plan must document make check verification." >&2
   exit 1
@@ -511,6 +534,16 @@ fi
 
 if ! grep -Fq "status: completed" "$SEND_NODE_GUARD_PLAN" || ! grep -Fq "make check" "$SEND_NODE_GUARD_PLAN"; then
   printf '%s\n' "Wear mobile send node guard plan must record completed status and make check verification." >&2
+  exit 1
+fi
+
+if [ ! -f "$BLANK_MESSAGE_PLAN" ]; then
+  printf '%s\n' "Wear mobile blank message guard plan is missing." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$BLANK_MESSAGE_PLAN" || ! grep -Fq "make check" "$BLANK_MESSAGE_PLAN"; then
+  printf '%s\n' "Wear mobile blank message guard plan must record completed status and make check verification." >&2
   exit 1
 fi
 

@@ -24,6 +24,13 @@ final class WearMessage {
         return new String(data, MESSAGE_CHARSET);
     }
 
+    static String normalizeText(CharSequence text) {
+        if (text == null) {
+            return "";
+        }
+        return text.toString().trim();
+    }
+
     static boolean isStartActivityPath(String path) {
         return path != null && START_ACTIVITY.equalsIgnoreCase(path);
     }

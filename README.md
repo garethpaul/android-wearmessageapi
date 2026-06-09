@@ -106,6 +106,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   a successful send lifecycle race.
 - The mobile sends guard missing connected-node results, node IDs, send
   results, and statuses before clearing input.
+- The mobile sender normalizes typed text and ignores whitespace-only messages
+  before adding or sending them.
 - The mobile and wear activities validate required startup views before connecting
   to Wear APIs.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
@@ -125,6 +127,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   and wear startup view binding guard.
 - See `docs/plans/2026-06-09-wear-mobile-send-node-guard.md` for mobile
   connected-node send guards.
+- See `docs/plans/2026-06-09-wear-mobile-blank-message-guard.md` for mobile
+  blank-message send handling.
 
 ## Contributing
 
