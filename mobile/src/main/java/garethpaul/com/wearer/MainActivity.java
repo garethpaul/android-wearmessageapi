@@ -32,7 +32,11 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        init();
+        if( !init() ) {
+            finish();
+            return;
+        }
+
         initGoogleApiClient();
     }
 
@@ -56,10 +60,14 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
         super.onDestroy();
     }
 
-    private void init() {
+    private boolean init() {
         mListView = (ListView) findViewById( R.id.list_view );
         mEditText = (EditText) findViewById( R.id.input );
         mSendButton = (Button) findViewById( R.id.btn_send );
+
+        if( mListView == null || mEditText == null || mSendButton == null ) {
+            return false;
+        }
 
         mAdapter = new ArrayAdapter<String>( this, android.R.layout.simple_list_item_1 );
         mListView.setAdapter( mAdapter );
@@ -76,6 +84,8 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
                 }
             }
         });
+
+        return true;
     }
 
     private void sendMessage( final String path, final String text ) {

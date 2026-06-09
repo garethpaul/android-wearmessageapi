@@ -21,14 +21,28 @@ public class MainActivity extends Activity implements MessageApi.MessageListener
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mListView = (ListView) findViewById(R.id.list);
 
-        mAdapter = new ArrayAdapter<String>( this, R.layout.list_item );
-        mListView.setAdapter( mAdapter );
+        if( !initViews() ) {
+            finish();
+            return;
+        }
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         initGoogleApiClient();
+    }
+
+    private boolean initViews() {
+        mListView = (ListView) findViewById(R.id.list);
+
+        if( mListView == null ) {
+            return false;
+        }
+
+        mAdapter = new ArrayAdapter<String>( this, R.layout.list_item );
+        mListView.setAdapter( mAdapter );
+
+        return true;
     }
 
     private void initGoogleApiClient() {

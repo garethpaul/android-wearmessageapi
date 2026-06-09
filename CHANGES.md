@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Guarded mobile and wear activity startup view binding so required controls are
+  validated before wearable API connections are opened.
 - Guarded mobile input clearing after successful sends when lifecycle teardown
   makes the input view unavailable.
 - Guarded the Wear listener service against null message events before checking

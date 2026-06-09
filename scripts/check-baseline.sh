@@ -26,6 +26,7 @@ PATH_CONTRACT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-message-path-contract-b
 SEND_RESULT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-message-send-result-baseline.md"
 WEAR_RECEIVER_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-message-receiver-lifecycle.md"
 MOBILE_CLEAR_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-mobile-clear-input-guard.md"
+STARTUP_VIEW_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-startup-view-binding-guard.md"
 
 if [ ! -f "$ROOT_DIR/CHANGES.md" ]; then
   printf '%s\n' "CHANGES.md must document repository maintenance." >&2
@@ -84,6 +85,16 @@ fi
 
 if ! grep -Fq "status: completed" "$MOBILE_CLEAR_PLAN" || ! grep -Fq "make check" "$MOBILE_CLEAR_PLAN"; then
   printf '%s\n' "Wear mobile clear-input guard plan must record completed status and make check verification." >&2
+  exit 1
+fi
+
+if [ ! -f "$STARTUP_VIEW_PLAN" ]; then
+  printf '%s\n' "Wear startup view binding guard plan is missing." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$STARTUP_VIEW_PLAN" || ! grep -Fq "make check" "$STARTUP_VIEW_PLAN"; then
+  printf '%s\n' "Wear startup view binding guard plan must record completed status and make check verification." >&2
   exit 1
 fi
 
@@ -218,6 +229,21 @@ if ! grep -Fq "if (mEditText == null)" "$MOBILE_ACTIVITY"; then
   exit 1
 fi
 
+if ! grep -Fq "private boolean init()" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile startup view binding must report whether required controls are available." >&2
+  exit 1
+fi
+
+if ! grep -Fq "if( !init() )" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile activity must stop before connecting when startup views are unavailable." >&2
+  exit 1
+fi
+
+if ! grep -Fq "if( mListView == null || mEditText == null || mSendButton == null )" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile activity must validate list, input, and send controls before wiring listeners." >&2
+  exit 1
+fi
+
 if ! grep -Fq "WearMessage.decode(messageEvent.getData())" "$WEAR_ACTIVITY"; then
   printf '%s\n' "Wear messages must decode payloads as UTF-8." >&2
   exit 1
@@ -240,6 +266,21 @@ fi
 
 if ! grep -Fq "if( mAdapter == null )" "$WEAR_ACTIVITY"; then
   printf '%s\n' "Wear message receiver must tolerate callbacks when the adapter is unavailable." >&2
+  exit 1
+fi
+
+if ! grep -Fq "private boolean initViews()" "$WEAR_ACTIVITY"; then
+  printf '%s\n' "Wear startup view binding must report whether required views are available." >&2
+  exit 1
+fi
+
+if ! grep -Fq "if( !initViews() )" "$WEAR_ACTIVITY"; then
+  printf '%s\n' "Wear activity must stop before connecting when startup views are unavailable." >&2
+  exit 1
+fi
+
+if ! grep -Fq "if( mListView == null )" "$WEAR_ACTIVITY"; then
+  printf '%s\n' "Wear activity must validate its list view before attaching the adapter." >&2
   exit 1
 fi
 
@@ -429,6 +470,11 @@ fi
 
 if ! grep -Fq "mobile sender skips input clearing if the input view is unavailable" "$ROOT_DIR/README.md"; then
   printf '%s\n' "README must document mobile clear-input lifecycle handling." >&2
+  exit 1
+fi
+
+if ! grep -Fq "mobile and wear activities validate required startup views before connecting" "$ROOT_DIR/README.md"; then
+  printf '%s\n' "README must document startup view binding validation." >&2
   exit 1
 fi
 
