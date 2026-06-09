@@ -53,10 +53,18 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 
 ## Testing and Verification
 
-Run the SDK-free source baseline check first:
+Run the root gate commands first:
 
 ```sh
+make lint
+make test
+make build
 make check
+```
+
+or run the underlying SDK-free source baseline directly:
+
+```sh
 scripts/check-baseline.sh
 ```
 
@@ -99,6 +107,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   receiver lifecycle guard.
 - See `docs/plans/2026-06-09-wear-message-send-result-baseline.md` for the
   send-result handling baseline.
+- See `docs/plans/2026-06-09-wear-message-make-gate-targets.md` for the root
+  lint, test, and build gate contract.
 
 ## Contributing
 

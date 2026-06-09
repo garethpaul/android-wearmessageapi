@@ -22,6 +22,7 @@ Priority:
 - Keep message path matching null-safe and case-insensitive across modules
 - Keep wear UI message rendering tolerant of late or malformed callbacks
 - Preserve typed messages until at least one paired node accepts the send
+- Keep root lint, test, and build gates wired to the two-module Gradle project
 - Avoid changing Google Play services dependencies without documenting impact
 - Maintain the two-module project structure
 

@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Added root `make lint`, `make test`, and `make build` gates around the
+  existing SDK-free and Gradle verification commands.
 - Guarded the wear activity message receiver so null or non-message callbacks
   are ignored before UI dispatch and adapter updates tolerate lifecycle races.
 - Preserved mobile message text when no paired Wear node reports a successful
