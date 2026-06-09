@@ -1,5 +1,12 @@
 # Android Wear Message API Changes
 
+## 2026-06-09
+
+- Added a baseline gate for the null-safe, case-insensitive `/start_activity`
+  and `/message` path contracts already covered by the mobile and wear unit
+  tests.
+- Documented the path-matching maintenance contract in the README and vision.
+
 ## 2026-06-08
 
 - Added null text and null payload handling to both mobile and wear

@@ -19,6 +19,7 @@ Priority:
 
 - Preserve the mobile-to-wear message flow and `/message` path behavior
 - Keep the watch activity launch path easy to inspect
+- Keep message path matching null-safe and case-insensitive across modules
 - Avoid changing Google Play services dependencies without documenting impact
 - Maintain the two-module project structure
 

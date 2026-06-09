@@ -22,6 +22,7 @@ WEAR_MESSAGE="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/WearMessage.jav
 MOBILE_MESSAGE_TEST="$ROOT_DIR/mobile/src/test/java/garethpaul/com/wearer/WearMessageTest.java"
 WEAR_MESSAGE_TEST="$ROOT_DIR/wear/src/test/java/garethpaul/com/wearer/WearMessageTest.java"
 NULL_PAYLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-08-wear-message-null-payloads.md"
+PATH_CONTRACT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-message-path-contract-baseline.md"
 
 if [ ! -f "$ROOT_DIR/CHANGES.md" ]; then
   printf '%s\n' "CHANGES.md must document repository maintenance." >&2
@@ -40,6 +41,16 @@ fi
 
 if ! grep -Fq "Status: Completed" "$NULL_PAYLOAD_PLAN" || ! grep -Fq "make check" "$NULL_PAYLOAD_PLAN"; then
   printf '%s\n' "Wear message null payload plan must record completed status and make check verification." >&2
+  exit 1
+fi
+
+if [ ! -f "$PATH_CONTRACT_PLAN" ]; then
+  printf '%s\n' "Wear message path contract plan is missing." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$PATH_CONTRACT_PLAN" || ! grep -Fq "make check" "$PATH_CONTRACT_PLAN"; then
+  printf '%s\n' "Wear message path contract plan must record completed status and make check verification." >&2
   exit 1
 fi
 
@@ -184,9 +195,21 @@ for message_file in "$MOBILE_MESSAGE" "$WEAR_MESSAGE"; do
     printf '%s\n' "WearMessage must null-guard startup path checks." >&2
     exit 1
   fi
+  if ! grep -Fq "path != null && WEAR_MESSAGE_PATH.equalsIgnoreCase(path)" "$message_file"; then
+    printf '%s\n' "WearMessage must null-guard text message path checks." >&2
+    exit 1
+  fi
 done
 
 for test_file in "$MOBILE_MESSAGE_TEST" "$WEAR_MESSAGE_TEST"; do
+  if ! grep -Fq "recognizesStartActivityPathCaseInsensitively" "$test_file"; then
+    printf '%s\n' "WearMessage tests must cover case-insensitive start path matching." >&2
+    exit 1
+  fi
+  if ! grep -Fq "recognizesWearMessagePathCaseInsensitively" "$test_file"; then
+    printf '%s\n' "WearMessage tests must cover case-insensitive text path matching." >&2
+    exit 1
+  fi
   if ! grep -Fq "encodesMessagesAsUtf8" "$test_file"; then
     printf '%s\n' "WearMessage tests must cover UTF-8 round trips." >&2
     exit 1

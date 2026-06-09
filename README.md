@@ -86,6 +86,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - This looks like a legacy Android project or sample. Expect Android SDK, Gradle, and support-library versions to matter.
 - The mobile and wear message helpers use explicit UTF-8 payloads and treat null
   text or payloads as empty values.
+- The `/start_activity` and `/message` path helpers are null-safe and
+  case-insensitive in both modules.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 - See `CHANGES.md` for the maintenance history.
