@@ -29,6 +29,7 @@ MOBILE_CLEAR_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-mobile-clear-input-guard
 STARTUP_VIEW_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-startup-view-binding-guard.md"
 SEND_NODE_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-mobile-send-node-guard.md"
 BLANK_MESSAGE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-mobile-blank-message-guard.md"
+CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 
 if [ ! -f "$ROOT_DIR/CHANGES.md" ]; then
   printf '%s\n' "CHANGES.md must document repository maintenance." >&2
@@ -77,6 +78,36 @@ fi
 
 if ! grep -Fq "Status: Completed" "$WEAR_RECEIVER_PLAN" || ! grep -Fq "make check" "$WEAR_RECEIVER_PLAN"; then
   printf '%s\n' "Wear message receiver lifecycle plan must record completed status and make check verification." >&2
+  exit 1
+fi
+
+if [ ! -f "$ROOT_DIR/.github/workflows/check.yml" ]; then
+  printf '%s\n' "GitHub Actions check workflow is missing." >&2
+  exit 1
+fi
+
+for workflow_contract in \
+  "permissions:" \
+  "contents: read" \
+  "timeout-minutes: 5" \
+  "workflow_dispatch:" \
+  "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" \
+  'ANDROID_HOME: ""' \
+  'ANDROID_SDK_ROOT: ""' \
+  "make check"; do
+  if ! grep -Fq "$workflow_contract" "$ROOT_DIR/.github/workflows/check.yml"; then
+    printf '%s\n' "GitHub Actions check workflow must keep contract: $workflow_contract" >&2
+    exit 1
+  fi
+done
+
+if grep -Fq "/home/gjones" "$ROOT_DIR/Makefile"; then
+  printf '%s\n' "Makefile must not embed a maintainer-specific Android SDK path." >&2
+  exit 1
+fi
+
+if ! grep -Fq "GitHub Actions" "$ROOT_DIR/README.md"; then
+  printf '%s\n' "README must document the GitHub Actions check." >&2
   exit 1
 fi
 
@@ -544,6 +575,16 @@ fi
 
 if ! grep -Fq "status: completed" "$BLANK_MESSAGE_PLAN" || ! grep -Fq "make check" "$BLANK_MESSAGE_PLAN"; then
   printf '%s\n' "Wear mobile blank message guard plan must record completed status and make check verification." >&2
+  exit 1
+fi
+
+if [ ! -f "$CI_PLAN" ]; then
+  printf '%s\n' "Wear message CI baseline plan is missing." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$CI_PLAN" || ! grep -Fq "make check" "$CI_PLAN"; then
+  printf '%s\n' "Wear message CI baseline plan must record completed status and make check verification." >&2
   exit 1
 fi
 

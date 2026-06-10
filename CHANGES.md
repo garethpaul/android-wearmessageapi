@@ -1,5 +1,13 @@
 # Android Wear Message API Changes
 
+## 2026-06-10
+
+- Added pinned, read-only GitHub Actions that runs `make check` for the
+  mobile/wear message baseline with explicit SDK-free execution.
+- Extended the SDK-free baseline to require the CI workflow and completed CI
+  plan.
+- Removed the maintainer-specific Android SDK path from the Makefile.
+
 ## 2026-06-09
 
 - Normalized mobile message input so blank or whitespace-only messages are not

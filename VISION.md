@@ -28,6 +28,7 @@ Priority:
 - Keep blank or whitespace-only mobile messages from being sent
 - Keep mobile and wear startup view binding checked before connecting Wear APIs
 - Keep root lint, test, and build gates wired to the two-module Gradle project
+- Keep the SDK-free `make check` baseline running in GitHub Actions
 - Avoid changing Google Play services dependencies without documenting impact
 - Maintain the two-module project structure
 

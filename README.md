@@ -12,6 +12,7 @@ This README is based on the checked-in source, manifests, scripts, and repositor
 ## Repository Contents
 
 - `README.md` - project overview and local usage notes
+- `.github/workflows/check.yml` - GitHub Actions baseline for `make check`
 - `build.gradle` - Android or Gradle build configuration
 - `docs` - source or example code
 - `gradle` - source or example code
@@ -67,6 +68,12 @@ or run the underlying SDK-free source baseline directly:
 ```sh
 scripts/check-baseline.sh
 ```
+
+GitHub Actions runs `make check` on pushes and pull requests. On hosted Linux
+runners without the legacy Android SDK, the SDK-free baseline still runs and
+Gradle gates report clear skips.
+Local Gradle checks require an explicit `ANDROID_HOME`; CI clears ambient SDK
+variables to preserve the documented static-only boundary.
 
 Then run Gradle after Android SDK configuration is available:
 
@@ -129,6 +136,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   connected-node send guards.
 - See `docs/plans/2026-06-09-wear-mobile-blank-message-guard.md` for mobile
   blank-message send handling.
+- See `docs/plans/2026-06-10-ci-baseline.md` for the lightweight GitHub
+  Actions baseline.
 
 ## Contributing
 
