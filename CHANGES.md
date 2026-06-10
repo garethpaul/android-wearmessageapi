@@ -4,6 +4,8 @@
 
 - Serialized mobile sends through an explicit pending state, disabled repeated
   taps, and added generic failure feedback.
+- Gated the mobile send control on Wear connection lifecycle state so startup,
+  suspension, failure, and completion cannot expose a disconnected sender.
 - Moved outgoing history updates behind confirmed node delivery and only clear
   input when it still matches the message that completed, preserving newer
   edits.

@@ -11,6 +11,7 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.Node;
@@ -18,7 +19,8 @@ import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 
 
-public class MainActivity extends Activity implements GoogleApiClient.ConnectionCallbacks {
+public class MainActivity extends Activity implements GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener {
 
     private GoogleApiClient mApiClient;
 
@@ -28,6 +30,7 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
     private EditText mEditText;
     private Button mSendButton;
     private boolean messageSendInProgress;
+    private boolean wearConnected;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +49,7 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
         mApiClient = new GoogleApiClient.Builder( this )
                 .addApi( Wearable.API )
                 .addConnectionCallbacks( this )
+                .addOnConnectionFailedListener( this )
                 .build();
 
         mApiClient.connect();
@@ -53,6 +57,7 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
 
     @Override
     protected void onDestroy() {
+        wearConnected = false;
         if (mApiClient != null) {
             mApiClient.unregisterConnectionCallbacks( this );
             if (mApiClient.isConnected() || mApiClient.isConnecting()) {
@@ -78,17 +83,29 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
             @Override
             public void onClick(View view) {
                 String text = WearMessage.normalizeText(mEditText.getText());
-                if (TextUtils.isEmpty(text) || messageSendInProgress) {
+                if (TextUtils.isEmpty(text) || messageSendInProgress || !isWearConnected()) {
                     return;
                 }
 
                 messageSendInProgress = true;
-                mSendButton.setEnabled(false);
+                updateSendButtonState();
                 sendMessage(WearMessage.WEAR_MESSAGE_PATH, text, true);
             }
         });
+        updateSendButtonState();
 
         return true;
+    }
+
+    private boolean isWearConnected() {
+        return wearConnected && mApiClient != null && mApiClient.isConnected();
+    }
+
+    private void updateSendButtonState() {
+        if (mSendButton != null) {
+            mSendButton.setEnabled(!messageSendInProgress && isWearConnected()
+                    && !isFinishing() && !isDestroyed());
+        }
     }
 
     private void sendMessage(
@@ -146,9 +163,7 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
                 }
 
                 messageSendInProgress = false;
-                if (mSendButton != null) {
-                    mSendButton.setEnabled(true);
-                }
+                updateSendButtonState();
 
                 if (!messageSent) {
                     Toast.makeText(
@@ -173,11 +188,24 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
 
     @Override
     public void onConnected(Bundle bundle) {
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+
+        wearConnected = true;
+        updateSendButtonState();
         sendMessage(WearMessage.START_ACTIVITY, "", false);
     }
 
     @Override
     public void onConnectionSuspended(int i) {
+        wearConnected = false;
+        updateSendButtonState();
+    }
 
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        wearConnected = false;
+        updateSendButtonState();
     }
 }

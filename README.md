@@ -114,6 +114,9 @@ When the required SDK or runtime is unavailable, use static checks and source re
   the input only when it still matches the confirmed message.
 - The send button stays disabled while a send is pending so repeated taps do
   not create overlapping background sends.
+- The send button also stays disabled until the Wear client connects and after
+  connection suspension or failure; send completion cannot re-enable a
+  disconnected sender.
 - The mobile sends guard missing connected-node results, node IDs, send
   results, and statuses before clearing input.
 - The mobile sender normalizes typed text and ignores whitespace-only messages

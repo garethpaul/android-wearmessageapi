@@ -26,6 +26,7 @@ Priority:
 - Record outgoing history only after at least one paired node accepts the send
 - Preserve newer input edits when an earlier asynchronous send completes
 - Keep one mobile send in flight at a time and surface failed sends
+- Keep mobile send controls disabled unless the Wear client is connected
 - Keep mobile sends guarded when connected-node data is incomplete
 - Keep blank or whitespace-only mobile messages from being sent
 - Keep mobile and wear startup view binding checked before connecting Wear APIs

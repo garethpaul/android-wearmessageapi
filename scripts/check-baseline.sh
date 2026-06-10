@@ -31,6 +31,7 @@ SEND_NODE_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-mobile-send-node-guar
 BLANK_MESSAGE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-mobile-blank-message-guard.md"
 CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 SEND_STATE_PLAN="$ROOT_DIR/docs/plans/2026-06-10-wear-mobile-send-state.md"
+CONNECTION_STATE_PLAN="$ROOT_DIR/docs/plans/2026-06-10-wear-mobile-connection-state.md"
 
 if [ ! -f "$ROOT_DIR/CHANGES.md" ]; then
   printf '%s\n' "CHANGES.md must document repository maintenance." >&2
@@ -219,6 +220,12 @@ if ! grep -Fq ".addConnectionCallbacks( this )" "$MOBILE_ACTIVITY"; then
   exit 1
 fi
 
+if ! grep -Fq ".addOnConnectionFailedListener( this )" "$MOBILE_ACTIVITY" || \
+   ! grep -Fq "GoogleApiClient.OnConnectionFailedListener" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile GoogleApiClient must register connection failure callbacks." >&2
+  exit 1
+fi
+
 if ! grep -Fq "unregisterConnectionCallbacks( this )" "$MOBILE_ACTIVITY"; then
   printf '%s\n' "Mobile GoogleApiClient callbacks must be unregistered." >&2
   exit 1
@@ -277,9 +284,13 @@ if ! grep -Fq "result != null && result.getStatus() != null" "$MOBILE_ACTIVITY" 
 fi
 
 for send_state_contract in \
-  "if (TextUtils.isEmpty(text) || messageSendInProgress)" \
+  "if (TextUtils.isEmpty(text) || messageSendInProgress || !isWearConnected())" \
   "messageSendInProgress = true" \
-  "mSendButton.setEnabled(false)" \
+  "private boolean wearConnected;" \
+  "private boolean isWearConnected()" \
+  "return wearConnected && mApiClient != null && mApiClient.isConnected()" \
+  "private void updateSendButtonState()" \
+  "mSendButton.setEnabled(!messageSendInProgress && isWearConnected()" \
   "sendMessage(WearMessage.WEAR_MESSAGE_PATH, text, true)" \
   "final boolean reportUserResult" \
   "finally" \
@@ -288,7 +299,8 @@ for send_state_contract in \
   "private void completeMessageSend(final String sentText, final boolean messageSent)" \
   "if (isFinishing() || isDestroyed())" \
   "messageSendInProgress = false" \
-  "mSendButton.setEnabled(true)" \
+  "public void onConnectionSuspended(int i)" \
+  "public void onConnectionFailed(ConnectionResult connectionResult)" \
   "if (!messageSent)" \
   "R.string.message_send_failed" \
   "mAdapter.add(sentText)" \
@@ -298,6 +310,32 @@ for send_state_contract in \
     exit 1
   fi
 done
+
+if [ "$(grep -Fc "wearConnected = false;" "$MOBILE_ACTIVITY")" -lt 3 ] || \
+   [ "$(grep -Fc "wearConnected = true;" "$MOBILE_ACTIVITY")" -ne 1 ]; then
+  printf '%s\n' "Mobile Wear connection state must follow connect, suspend, failure, and destroy callbacks." >&2
+  exit 1
+fi
+
+if ! awk '
+  /public void onConnected\(Bundle bundle\)/ { in_connected = 1 }
+  in_connected && /wearConnected = true;/ { found = 1 }
+  in_connected && /sendMessage\(WearMessage.START_ACTIVITY/ { in_connected = 0 }
+  END { exit found ? 0 : 1 }
+' "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile Wear connection state must become ready inside onConnected." >&2
+  exit 1
+fi
+
+if [ "$(grep -Fc "updateSendButtonState();" "$MOBILE_ACTIVITY")" -lt 5 ]; then
+  printf '%s\n' "Mobile send controls must follow initialization, completion, and connection callbacks." >&2
+  exit 1
+fi
+
+if grep -Fq "mSendButton.setEnabled(true)" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile send controls must not bypass connection-aware state." >&2
+  exit 1
+fi
 
 if ! grep -Fq 'sendMessage(WearMessage.START_ACTIVITY, "", false)' "$MOBILE_ACTIVITY"; then
   printf '%s\n' "Start-activity control sends must not update user-message UI state." >&2
@@ -654,6 +692,17 @@ fi
 
 if ! grep -Fq "Status: Completed" "$SEND_STATE_PLAN" || ! grep -Fq "make check" "$SEND_STATE_PLAN"; then
   printf '%s\n' "Wear mobile send-state plan must record completed status and make check verification." >&2
+  exit 1
+fi
+
+if [ ! -f "$CONNECTION_STATE_PLAN" ]; then
+  printf '%s\n' "Wear mobile connection-state plan is missing." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$CONNECTION_STATE_PLAN" || \
+   ! grep -Fq "make check" "$CONNECTION_STATE_PLAN"; then
+  printf '%s\n' "Wear mobile connection-state plan must record completed status and make check verification." >&2
   exit 1
 fi
 
