@@ -2,6 +2,15 @@
 
 ## 2026-06-10
 
+- Serialized mobile sends through an explicit pending state, disabled repeated
+  taps, and added generic failure feedback.
+- Moved outgoing history updates behind confirmed node delivery and only clear
+  input when it still matches the message that completed, preserving newer
+  edits.
+- Kept connection-time `/start_activity` control sends outside user-message
+  history and failure feedback.
+- Added matching mobile/wear unit coverage for input cleanup decisions and made
+  root checks portable with hardened Ubuntu 24.04 CI concurrency.
 - Added pinned, read-only GitHub Actions that runs `make check` for the
   mobile/wear message baseline with explicit SDK-free execution.
 - Extended the SDK-free baseline to require the CI workflow and completed CI

@@ -45,4 +45,12 @@ public class WearMessageTest {
         assertEquals("", WearMessage.normalizeText("   "));
         assertEquals("hello", WearMessage.normalizeText(" hello "));
     }
+
+    @Test
+    public void clearsOnlyMatchingCurrentInput() {
+        assertTrue(WearMessage.shouldClearInput(" hello ", "hello"));
+        assertFalse(WearMessage.shouldClearInput("new text", "hello"));
+        assertFalse(WearMessage.shouldClearInput(null, "hello"));
+        assertFalse(WearMessage.shouldClearInput("", ""));
+    }
 }

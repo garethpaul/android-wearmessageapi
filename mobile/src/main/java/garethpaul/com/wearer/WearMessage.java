@@ -31,6 +31,12 @@ final class WearMessage {
         return text.toString().trim();
     }
 
+    static boolean shouldClearInput(CharSequence currentText, String sentText) {
+        String normalizedSentText = normalizeText(sentText);
+        return normalizedSentText.length() > 0
+                && normalizedSentText.equals(normalizeText(currentText));
+    }
+
     static boolean isStartActivityPath(String path) {
         return path != null && START_ACTIVITY.equalsIgnoreCase(path);
     }

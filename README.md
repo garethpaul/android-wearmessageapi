@@ -71,16 +71,17 @@ scripts/check-baseline.sh
 
 GitHub Actions runs `make check` on pushes and pull requests. On hosted Linux
 runners without the legacy Android SDK, the SDK-free baseline still runs and
-Gradle gates report clear skips.
-Local Gradle checks require an explicit `ANDROID_HOME`; CI clears ambient SDK
+Gradle gates report clear skips. The workflow uses Ubuntu 24.04 and cancels
+superseded runs.
+Local Gradle checks accept `ANDROID_HOME` or `ANDROID_SDK_ROOT`; CI clears both
 variables to preserve the documented static-only boundary.
 
 Then run Gradle after Android SDK configuration is available:
 
 ```sh
-ANDROID_HOME=/home/gjones/android-sdk ./gradlew lint --no-daemon
-ANDROID_HOME=/home/gjones/android-sdk ./gradlew test --no-daemon
-ANDROID_HOME=/home/gjones/android-sdk ./gradlew assembleDebug --no-daemon
+ANDROID_HOME=/path/to/android-sdk ./gradlew lint --no-daemon
+ANDROID_HOME=/path/to/android-sdk ./gradlew test --no-daemon
+ANDROID_HOME=/path/to/android-sdk ./gradlew assembleDebug --no-daemon
 ```
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
@@ -107,10 +108,12 @@ When the required SDK or runtime is unavailable, use static checks and source re
   ignores callbacks when the list adapter is unavailable.
 - The wear listener service ignores null message events before checking launch
   paths.
-- The mobile sender only clears typed text after at least one paired node
-  accepts the Wear message.
-- The mobile sender skips input clearing if the input view is unavailable after
-  a successful send lifecycle race.
+- The mobile sender records messages only after a paired node accepts them and
+  shows generic feedback when no send succeeds.
+- The mobile sender preserves edits made while a send is in flight by clearing
+  the input only when it still matches the confirmed message.
+- The send button stays disabled while a send is pending so repeated taps do
+  not create overlapping background sends.
 - The mobile sends guard missing connected-node results, node IDs, send
   results, and statuses before clearing input.
 - The mobile sender normalizes typed text and ignores whitespace-only messages
@@ -138,6 +141,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   blank-message send handling.
 - See `docs/plans/2026-06-10-ci-baseline.md` for the lightweight GitHub
   Actions baseline.
+- See `docs/plans/2026-06-10-wear-mobile-send-state.md` for the confirmed-send
+  history and matching-input cleanup contract.
 
 ## Contributing
 

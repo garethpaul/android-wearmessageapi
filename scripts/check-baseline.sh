@@ -30,6 +30,7 @@ STARTUP_VIEW_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-startup-view-binding-gua
 SEND_NODE_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-mobile-send-node-guard.md"
 BLANK_MESSAGE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-mobile-blank-message-guard.md"
 CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
+SEND_STATE_PLAN="$ROOT_DIR/docs/plans/2026-06-10-wear-mobile-send-state.md"
 
 if [ ! -f "$ROOT_DIR/CHANGES.md" ]; then
   printf '%s\n' "CHANGES.md must document repository maintenance." >&2
@@ -89,6 +90,8 @@ fi
 for workflow_contract in \
   "permissions:" \
   "contents: read" \
+  "runs-on: ubuntu-24.04" \
+  "cancel-in-progress: true" \
   "timeout-minutes: 5" \
   "workflow_dispatch:" \
   "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" \
@@ -101,7 +104,16 @@ for workflow_contract in \
   fi
 done
 
-if grep -Fq "/home/gjones" "$ROOT_DIR/Makefile"; then
+for make_contract in \
+  'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' \
+  'ANDROID_SDK := $(if $(ANDROID_HOME),$(ANDROID_HOME),$(ANDROID_SDK_ROOT))'; do
+  if ! grep -Fq "$make_contract" "$ROOT_DIR/Makefile"; then
+    printf '%s\n' "Makefile must keep contract: $make_contract" >&2
+    exit 1
+  fi
+done
+
+if grep -Eq '/(home|Users)/[^/]+/.+android-sdk' "$ROOT_DIR/Makefile"; then
   printf '%s\n' "Makefile must not embed a maintainer-specific Android SDK path." >&2
   exit 1
 fi
@@ -217,7 +229,8 @@ if ! grep -Fq "mApiClient.isConnected() || mApiClient.isConnecting()" "$MOBILE_A
   exit 1
 fi
 
-if ! grep -Fq "mApiClient == null || !mApiClient.isConnected()" "$MOBILE_ACTIVITY"; then
+if ! grep -Fq "GoogleApiClient apiClient = mApiClient" "$MOBILE_ACTIVITY" || \
+   ! grep -Fq "apiClient == null || !apiClient.isConnected()" "$MOBILE_ACTIVITY"; then
   printf '%s\n' "Mobile message sends must guard disconnected GoogleApiClient state." >&2
   exit 1
 fi
@@ -257,28 +270,65 @@ if ! grep -Fq "if (node == null || node.getId() == null)" "$MOBILE_ACTIVITY"; th
   exit 1
 fi
 
-if ! grep -Fq "result != null && result.getStatus() != null && result.getStatus().isSuccess()" "$MOBILE_ACTIVITY"; then
+if ! grep -Fq "result != null && result.getStatus() != null" "$MOBILE_ACTIVITY" || \
+   ! grep -Fq "result.getStatus().isSuccess()" "$MOBILE_ACTIVITY"; then
   printf '%s\n' "Mobile message sends must guard null send results before checking status." >&2
   exit 1
 fi
 
-if ! grep -Fq "result.getStatus().isSuccess()" "$MOBILE_ACTIVITY"; then
-  printf '%s\n' "Mobile message input must clear only after a successful send." >&2
+for send_state_contract in \
+  "if (TextUtils.isEmpty(text) || messageSendInProgress)" \
+  "messageSendInProgress = true" \
+  "mSendButton.setEnabled(false)" \
+  "sendMessage(WearMessage.WEAR_MESSAGE_PATH, text, true)" \
+  "final boolean reportUserResult" \
+  "finally" \
+  "if (reportUserResult)" \
+  "completeMessageSend(text, messageSent)" \
+  "private void completeMessageSend(final String sentText, final boolean messageSent)" \
+  "if (isFinishing() || isDestroyed())" \
+  "messageSendInProgress = false" \
+  "mSendButton.setEnabled(true)" \
+  "if (!messageSent)" \
+  "R.string.message_send_failed" \
+  "mAdapter.add(sentText)" \
+  "WearMessage.shouldClearInput(mEditText.getText(), sentText)"; do
+  if ! grep -Fq "$send_state_contract" "$MOBILE_ACTIVITY"; then
+    printf '%s\n' "Missing mobile send-state contract: $send_state_contract" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq 'sendMessage(WearMessage.START_ACTIVITY, "", false)' "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Start-activity control sends must not update user-message UI state." >&2
   exit 1
 fi
 
-if ! grep -Fq "if (messageSent)" "$MOBILE_ACTIVITY"; then
-  printf '%s\n' "Mobile message sends must preserve text when no paired node accepts it." >&2
+if awk '
+  /catch \(RuntimeException ignored\)/ { in_catch = 1 }
+  in_catch && /messageSent = false/ { found = 1 }
+  in_catch && /finally/ { in_catch = 0 }
+  END { exit found ? 0 : 1 }
+' "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "A later node exception must not erase an earlier successful send." >&2
   exit 1
 fi
 
-if ! grep -Fq "private void clearMessageInput()" "$MOBILE_ACTIVITY"; then
-  printf '%s\n' "Mobile input clearing must stay isolated behind the send-success guard." >&2
+if grep -Fq "mAdapter.add(text);" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile history must not record a message before a node accepts it." >&2
   exit 1
 fi
 
-if ! grep -Fq "if (mEditText == null)" "$MOBILE_ACTIVITY"; then
-  printf '%s\n' "Mobile input clearing must tolerate lifecycle races after send success." >&2
+for message_file in "$MOBILE_MESSAGE" "$WEAR_MESSAGE"; do
+  if ! grep -Fq "static boolean shouldClearInput(CharSequence currentText, String sentText)" "$message_file" || \
+     ! grep -Fq "normalizedSentText.equals(normalizeText(currentText))" "$message_file"; then
+    printf '%s\n' "WearMessage must clear only unchanged matching input." >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq 'name="message_send_failed"' "$MOBILE_STRINGS"; then
+  printf '%s\n' "Mobile send failure feedback must use a string resource." >&2
   exit 1
 fi
 
@@ -411,6 +461,10 @@ for test_file in "$MOBILE_MESSAGE_TEST" "$WEAR_MESSAGE_TEST"; do
     printf '%s\n' "WearMessage tests must cover blank text normalization." >&2
     exit 1
   fi
+  if ! grep -Fq "clearsOnlyMatchingCurrentInput" "$test_file"; then
+    printf '%s\n' "WearMessage tests must cover matching-input cleanup." >&2
+    exit 1
+  fi
 done
 
 for removed_resource in \
@@ -533,8 +587,8 @@ if ! grep -Fq "wear listener service ignores null message events" "$ROOT_DIR/REA
   exit 1
 fi
 
-if ! grep -Fq "mobile sender skips input clearing if the input view is unavailable" "$ROOT_DIR/README.md"; then
-  printf '%s\n' "README must document mobile clear-input lifecycle handling." >&2
+if ! grep -Fq "preserves edits made while a send is in flight" "$ROOT_DIR/README.md"; then
+  printf '%s\n' "README must document matching-input cleanup." >&2
   exit 1
 fi
 
@@ -550,6 +604,11 @@ fi
 
 if ! grep -Fq "mobile sender normalizes typed text and ignores whitespace-only messages" "$ROOT_DIR/README.md"; then
   printf '%s\n' "README must document mobile blank-message handling." >&2
+  exit 1
+fi
+
+if ! grep -Fq "records messages only after a paired node accepts them" "$ROOT_DIR/README.md"; then
+  printf '%s\n' "README must document confirmed-send history." >&2
   exit 1
 fi
 
@@ -585,6 +644,16 @@ fi
 
 if ! grep -Fq "status: completed" "$CI_PLAN" || ! grep -Fq "make check" "$CI_PLAN"; then
   printf '%s\n' "Wear message CI baseline plan must record completed status and make check verification." >&2
+  exit 1
+fi
+
+if [ ! -f "$SEND_STATE_PLAN" ]; then
+  printf '%s\n' "Wear mobile send-state plan is missing." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$SEND_STATE_PLAN" || ! grep -Fq "make check" "$SEND_STATE_PLAN"; then
+  printf '%s\n' "Wear mobile send-state plan must record completed status and make check verification." >&2
   exit 1
 fi
 

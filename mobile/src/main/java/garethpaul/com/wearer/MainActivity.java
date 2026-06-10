@@ -9,6 +9,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.wearable.MessageApi;
@@ -26,6 +27,7 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
     private ListView mListView;
     private EditText mEditText;
     private Button mSendButton;
+    private boolean messageSendInProgress;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,67 +78,102 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
             @Override
             public void onClick(View view) {
                 String text = WearMessage.normalizeText(mEditText.getText());
-                if (!TextUtils.isEmpty(text)) {
-                    mAdapter.add(text);
-                    mAdapter.notifyDataSetChanged();
-
-                    sendMessage(WearMessage.WEAR_MESSAGE_PATH, text);
+                if (TextUtils.isEmpty(text) || messageSendInProgress) {
+                    return;
                 }
+
+                messageSendInProgress = true;
+                mSendButton.setEnabled(false);
+                sendMessage(WearMessage.WEAR_MESSAGE_PATH, text, true);
             }
         });
 
         return true;
     }
 
-    private void sendMessage( final String path, final String text ) {
+    private void sendMessage(
+            final String path,
+            final String text,
+            final boolean reportUserResult) {
         new Thread( new Runnable() {
             @Override
             public void run() {
-                if (mApiClient == null || !mApiClient.isConnected()) {
-                    return;
-                }
-
                 boolean messageSent = false;
-                NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes( mApiClient ).await();
-                if (nodes == null || nodes.getNodes() == null) {
-                    return;
-                }
-
-                for (Node node : nodes.getNodes()) {
-                    if (node == null || node.getId() == null) {
-                        continue;
+                try {
+                    GoogleApiClient apiClient = mApiClient;
+                    if (apiClient == null || !apiClient.isConnected()) {
+                        return;
                     }
 
-                    MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
-                            mApiClient, node.getId(), path, WearMessage.encode(text) ).await();
-                    if (result != null && result.getStatus() != null && result.getStatus().isSuccess()) {
-                        messageSent = true;
+                    NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi
+                            .getConnectedNodes(apiClient)
+                            .await();
+                    if (nodes == null || nodes.getNodes() == null) {
+                        return;
                     }
-                }
 
-                if (messageSent) {
-                    clearMessageInput();
+                    for (Node node : nodes.getNodes()) {
+                        if (node == null || node.getId() == null) {
+                            continue;
+                        }
+
+                        MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
+                                apiClient,
+                                node.getId(),
+                                path,
+                                WearMessage.encode(text)).await();
+                        if (result != null && result.getStatus() != null
+                                && result.getStatus().isSuccess()) {
+                            messageSent = true;
+                        }
+                    }
+                } catch (RuntimeException ignored) {
+                } finally {
+                    if (reportUserResult) {
+                        completeMessageSend(text, messageSent);
+                    }
                 }
             }
         }).start();
     }
 
-    private void clearMessageInput() {
+    private void completeMessageSend(final String sentText, final boolean messageSent) {
         runOnUiThread( new Runnable() {
             @Override
             public void run() {
-                if (mEditText == null) {
+                if (isFinishing() || isDestroyed()) {
                     return;
                 }
 
-                mEditText.setText( "" );
+                messageSendInProgress = false;
+                if (mSendButton != null) {
+                    mSendButton.setEnabled(true);
+                }
+
+                if (!messageSent) {
+                    Toast.makeText(
+                            MainActivity.this,
+                            R.string.message_send_failed,
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (mAdapter != null) {
+                    mAdapter.add(sentText);
+                    mAdapter.notifyDataSetChanged();
+                }
+
+                if (mEditText != null
+                        && WearMessage.shouldClearInput(mEditText.getText(), sentText)) {
+                    mEditText.setText( "" );
+                }
             }
         });
     }
 
     @Override
     public void onConnected(Bundle bundle) {
-        sendMessage(WearMessage.START_ACTIVITY, "");
+        sendMessage(WearMessage.START_ACTIVITY, "", false);
     }
 
     @Override
