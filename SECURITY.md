@@ -55,6 +55,13 @@ If this project requests device permissions such as location, camera, microphone
 
 ## Dependency and Supply Chain Security
 
+The generated Gradle 8.14.5 bootstrap retains the legacy Gradle 2.2.1 runtime
+required by Android Gradle Plugin 1.1.0. Review all four wrapper files together;
+the SDK-free baseline rejects drift from Gradle's published wrapper JAR and
+distribution SHA-256 values. Root Make targets remain independently routed
+through `scripts/verified-gradle.sh`, which verifies the same official archive.
+Both paths require Gradle HTTPS access when their caches are empty.
+
 Dependency updates should come from trusted package managers and should keep lockfiles in sync when lockfiles exist. Do not commit credentials, private keys, tokens, generated secrets, or machine-local configuration. If a vulnerability depends on a compromised package, typosquatting risk, insecure transitive dependency, or unsafe build step, include the package name, affected version, and the path through which it is used.
 
 ## Safe Research Guidelines

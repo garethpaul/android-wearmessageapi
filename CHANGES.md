@@ -2,6 +2,9 @@
 
 ## 2026-06-12
 
+- Regenerated the direct Gradle wrapper with official Gradle 8.14.5 tooling,
+  retained the Gradle 2.2.1 runtime, and pinned its official distribution
+  checksum without replacing the existing verified Make launcher.
 - Made the Wear listener service export policy explicit and constrained its
   manifest filter to the required Google Play services listener action.
 - Routed `/message` events through the Wear listener service so cold-start
