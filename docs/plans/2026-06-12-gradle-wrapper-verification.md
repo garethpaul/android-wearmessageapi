@@ -64,6 +64,9 @@ and exact-head hosted checks.
 
 ## Hosted Verification
 
-Exact-head pull-request and CodeQL evidence will be appended after the local
-implementation commit is pushed. Tracker reconciliation remains pending until
-both canonical hosted events are terminal green on the same head.
+- Implementation head `4455ad63488c2b85188e668c8658ac16d9cb98cb` is pushed
+  to PR #2, which is open and mergeable.
+- A bounded exact-head query found pull-request `Check` run `27441664749` and
+  CodeQL run `27441663521` queued on that implementation head.
+- Tracker reconciliation remains pending until both canonical hosted events
+  are terminal green on the same final head; no unbounded wait was started.
