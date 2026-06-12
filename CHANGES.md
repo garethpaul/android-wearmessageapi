@@ -2,6 +2,24 @@
 
 ## 2026-06-12
 
+- Made the Wear listener service export policy explicit and constrained its
+  manifest filter to the required Google Play services listener action.
+- Routed `/message` events through the Wear listener service so cold-start
+  delivery no longer depends on activity listener registration timing.
+- Reused a single Wear activity instance for service-delivered messages and
+  bounded outgoing and incoming payloads to 4096 UTF-8 bytes.
+- Added matching mobile and wear unit coverage for blank, null, valid, and
+  oversized message payloads.
+- Disabled persisted checkout credentials, added repository-wide ownership,
+  and enforced focused immutable-action and read-only workflow contracts.
+- Upgraded hosted verification from SDK-free skips to pinned Java 8 and Android
+  API 21 lint, unit tests, and debug assembly for both modules.
+- Installed Android packages under the runner JDK and upgraded setup-java to
+  its Node 24 release ahead of GitHub's June 2026 runtime migration.
+- Added a checksum-verifying Gradle launcher and rejected alternate manifests,
+  packaged binaries, symlinks, hidden Gradle inputs, and `buildSrc`.
+- Split the exported launcher from the private message activity so external
+  intents cannot inject unbounded or spoofed message extras.
 - Bounded connected-node lookup and per-node message delivery waits so stalled
   Wear transport operations cannot retain sender threads indefinitely.
 

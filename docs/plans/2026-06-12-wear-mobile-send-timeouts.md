@@ -19,8 +19,10 @@ including after the activity is destroyed.
 ## Verification
 
 - `make check`
-- Static mutation that restores an unbounded `await()` call
+- Android lint, debug/release JVM tests, and debug assembly for both modules
+- Focused mutations covering unbounded, duplicated, reordered, and altered waits
 - `git diff --check`
 
-The Android SDK and paired Wear runtime are unavailable on this host, so live
-transport timeout behavior still requires device or emulator verification.
+The Android SDK-backed gates pass on this host. A paired Wear runtime remains
+unavailable, so live transport timeout behavior still requires device or
+emulator verification.

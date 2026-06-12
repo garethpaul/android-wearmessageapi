@@ -47,10 +47,38 @@ public class WearMessageTest {
     }
 
     @Test
+    public void acceptsOnlyBoundedNonBlankMessages() {
+        assertTrue(WearMessage.isValidMessageText("hello"));
+        assertTrue(WearMessage.isValidMessageText(repeat('x', WearMessage.MAX_MESSAGE_BYTES)));
+        assertTrue(WearMessage.isValidMessageText(repeat('\u00e9', WearMessage.MAX_MESSAGE_BYTES / 2)));
+        assertFalse(WearMessage.isValidMessageText("   "));
+        assertFalse(WearMessage.isValidMessageText(repeat('x', WearMessage.MAX_MESSAGE_BYTES + 1)));
+        assertFalse(WearMessage.isValidMessageText(repeat('\u00e9', WearMessage.MAX_MESSAGE_BYTES / 2 + 1)));
+    }
+
+    private static String repeat(char value, int count) {
+        StringBuilder result = new StringBuilder(count);
+        for (int index = 0; index < count; index++) {
+            result.append(value);
+        }
+        return result.toString();
+    }
+
+    @Test
     public void clearsOnlyMatchingCurrentInput() {
         assertTrue(WearMessage.shouldClearInput(" hello ", "hello"));
         assertFalse(WearMessage.shouldClearInput("new text", "hello"));
         assertFalse(WearMessage.shouldClearInput(null, "hello"));
         assertFalse(WearMessage.shouldClearInput("", ""));
+    }
+
+    @Test
+    public void removesOldestEntryAtHistoryLimit() {
+        assertFalse(WearMessage.shouldRemoveOldestHistoryEntry(
+                WearMessage.MAX_HISTORY_ENTRIES - 1));
+        assertTrue(WearMessage.shouldRemoveOldestHistoryEntry(
+                WearMessage.MAX_HISTORY_ENTRIES));
+        assertTrue(WearMessage.shouldRemoveOldestHistoryEntry(
+                WearMessage.MAX_HISTORY_ENTRIES + 1));
     }
 }
