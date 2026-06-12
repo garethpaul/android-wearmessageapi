@@ -1,6 +1,6 @@
 # Wear Listener Export Contract
 
-Status: Implementation Complete; Hosted Verification Pending
+Status: Completed
 
 ## Context
 
@@ -47,7 +47,10 @@ message delivery and making future manifest drift fail closed.
   fresh external clone with the staged patch applied.
 - All 13 focused service declaration, export policy, listener action,
   documentation, and plan mutations were rejected.
-- Exact-head pull-request baseline and CodeQL verification remain pending.
+- Implementation SHA `ac0428a132e59fb001b32043364f1e16b668d486`
+  passed pull-request run `27404104907` and CodeQL run `27404102731`.
+  The exact PR ref reported zero open code-scanning alerts after Java/Kotlin
+  analysis.
 
 ## Boundaries
 

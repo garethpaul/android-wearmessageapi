@@ -312,13 +312,15 @@ if [ "$(printf '%s\n' "$wear_listener_manifest" | grep -c '<action ' || true)" -
 fi
 
 if [ ! -f "$LISTENER_EXPORT_PLAN" ] ||
-   ! grep -Fq "Status: Implementation Complete; Hosted Verification Pending" "$LISTENER_EXPORT_PLAN" ||
+   ! grep -Fq "Status: Completed" "$LISTENER_EXPORT_PLAN" ||
    ! grep -Fq "CodeQL alert 1" "$LISTENER_EXPORT_PLAN" ||
    ! grep -Fq "fresh external clone" "$LISTENER_EXPORT_PLAN" ||
    ! grep -Fq "lint with zero issues" "$LISTENER_EXPORT_PLAN" ||
    ! grep -Fq "All 13 focused service declaration" "$LISTENER_EXPORT_PLAN" ||
-   ! grep -Fq "verification remain pending" "$LISTENER_EXPORT_PLAN"; then
-  printf '%s\n' "Wear listener export plan must truthfully record pending hosted verification." >&2
+   ! grep -Fq "ac0428a132e59fb001b32043364f1e16b668d486" "$LISTENER_EXPORT_PLAN" ||
+   ! grep -Fq 'pull-request run `27404104907` and CodeQL run `27404102731`' "$LISTENER_EXPORT_PLAN" ||
+   ! grep -Fq "zero open code-scanning alerts" "$LISTENER_EXPORT_PLAN"; then
+  printf '%s\n' "Wear listener export plan must record completed hosted verification." >&2
   exit 1
 fi
 if ! grep -Fq "explicitly exported only" "$README_FILE" ||
