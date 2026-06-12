@@ -72,7 +72,8 @@ scripts/check-baseline.sh
 GitHub Actions runs `make check` on pushes and pull requests with pinned Java 8,
 Android API 21, and build-tools 24.0.3. Hosted verification runs the SDK-free
 baseline plus Gradle lint, unit tests, and debug assembly for both modules. The
-workflow uses Ubuntu 24.04 and cancels superseded runs.
+workflow uses Ubuntu 24.04, the Node 24 Actions runtime, and cancels superseded
+runs.
 Local Gradle checks accept `ANDROID_HOME` or `ANDROID_SDK_ROOT`.
 
 The Make targets download Gradle 2.2.1 from the official distribution service

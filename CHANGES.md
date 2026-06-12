@@ -12,6 +12,8 @@
   and enforced focused immutable-action and read-only workflow contracts.
 - Upgraded hosted verification from SDK-free skips to pinned Java 8 and Android
   API 21 lint, unit tests, and debug assembly for both modules.
+- Installed Android packages under the runner JDK and upgraded setup-java to
+  its Node 24 release ahead of GitHub's June 2026 runtime migration.
 - Added a checksum-verifying Gradle launcher and rejected alternate manifests,
   packaged binaries, symlinks, hidden Gradle inputs, and `buildSrc`.
 - Split the exported launcher from the private message activity so external

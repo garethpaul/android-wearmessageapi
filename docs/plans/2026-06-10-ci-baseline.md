@@ -19,8 +19,8 @@ payload, send-result, and lifecycle guards run before review.
 - Pinned checkout to an immutable revision, limited permissions to repository
   reads, disabled persisted checkout credentials, and bounded the job to fifteen
   minutes.
-- Added immutable Java 8 and Android SDK setup actions and installed API 21
-  with build-tools 24.0.3.
+- Added immutable Java 8 setup, installed API 21 with build-tools 24.0.3 via
+  the hosted runner SDK, and opted into the Node 24 Actions runtime.
 - Reused the guarded Makefile targets so hosted runners execute the SDK-free
   baseline plus Gradle lint, unit tests, and debug assembly for both modules.
 - Removed the maintainer-specific default SDK path; local Gradle checks still

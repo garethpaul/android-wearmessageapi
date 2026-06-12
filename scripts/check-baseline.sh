@@ -110,8 +110,7 @@ fi
 workflow_uses=$(grep -E '^[[:space:]]*(-[[:space:]]+)?uses:' "$CI_WORKFLOW" | sed -E 's/^[[:space:]]*(-[[:space:]]+)?//' | LC_ALL=C sort)
 expected_workflow_uses=$(printf '%s\n' \
   'uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3' \
-  'uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4' \
-  'uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3' | LC_ALL=C sort)
+  'uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0' | LC_ALL=C sort)
 if [ "$workflow_uses" != "$expected_workflow_uses" ]; then
   printf '%s\n' "GitHub Actions must use only the audited setup actions." >&2
   exit 1
@@ -123,8 +122,9 @@ if [ "$(grep -Ec '^[[:space:]]*permissions:' "$CI_WORKFLOW")" -ne 1 ] ||
   exit 1
 fi
 
-if [ "$(grep -Ec '^[[:space:]]*(-[[:space:]]+)?run:' "$CI_WORKFLOW")" -ne 1 ] ||
-   ! grep -Eq '^[[:space:]]*(-[[:space:]]+)?run: make check[[:space:]]*$' "$CI_WORKFLOW" ||
+if [ "$(grep -Ec '^[[:space:]]*(-[[:space:]]+)?run:' "$CI_WORKFLOW")" -ne 2 ] ||
+   ! grep -Fq 'run: '\''"${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-21" "build-tools;24.0.3"'\''' "$CI_WORKFLOW" ||
+   ! grep -Eq '^[[:space:]]*run: make check[[:space:]]*$' "$CI_WORKFLOW" ||
    grep -Eq 'continue-on-error:[[:space:]]*true|if:[[:space:]]*false' "$CI_WORKFLOW"; then
   printf '%s\n' "GitHub Actions must run exactly the required Make gate without bypasses." >&2
   exit 1
@@ -138,11 +138,12 @@ for workflow_contract in \
   'workflow_dispatch:' \
   'permissions:' \
   'contents: read' \
+  'FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true' \
   'runs-on: ubuntu-24.04' \
   'timeout-minutes: 15' \
   'cancel-in-progress: true' \
   'persist-credentials: false' \
-  'packages: platform-tools platforms;android-21 build-tools;24.0.3' \
+  '"${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-21" "build-tools;24.0.3"' \
   'java-version: "8"' \
   'run: make check'; do
   if ! grep -Fq -- "$workflow_contract" "$CI_WORKFLOW"; then
@@ -162,10 +163,10 @@ if ! awk '
   exit 1
 fi
 
-android_setup_line=$(grep -n 'android-actions/setup-android@' "$CI_WORKFLOW" | cut -d: -f1)
+android_setup_line=$(grep -n 'cmdline-tools/latest/bin/sdkmanager' "$CI_WORKFLOW" | cut -d: -f1)
 java_setup_line=$(grep -n 'actions/setup-java@' "$CI_WORKFLOW" | cut -d: -f1)
 if [ -z "$android_setup_line" ] || [ -z "$java_setup_line" ] || [ "$android_setup_line" -ge "$java_setup_line" ]; then
-  printf '%s\n' "Android SDK setup must run under the runner JDK before selecting Java 8 for Gradle." >&2
+  printf '%s\n' "Android SDK installation must run under the runner JDK before selecting Java 8 for Gradle." >&2
   exit 1
 fi
 
