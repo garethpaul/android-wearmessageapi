@@ -3,10 +3,22 @@ set -eu
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 ROOT_BUILD="$ROOT_DIR/build.gradle"
+README_FILE="$ROOT_DIR/README.md"
+SECURITY_FILE="$ROOT_DIR/SECURITY.md"
+VISION_FILE="$ROOT_DIR/VISION.md"
+CHANGES_FILE="$ROOT_DIR/CHANGES.md"
 MOBILE_BUILD="$ROOT_DIR/mobile/build.gradle"
 WEAR_BUILD="$ROOT_DIR/wear/build.gradle"
+SETTINGS_GRADLE="$ROOT_DIR/settings.gradle"
+GRADLE_PROPERTIES="$ROOT_DIR/gradle.properties"
+WRAPPER_PROPERTIES="$ROOT_DIR/gradle/wrapper/gradle-wrapper.properties"
+GRADLEW="$ROOT_DIR/gradlew"
+GRADLEW_BAT="$ROOT_DIR/gradlew.bat"
+WRAPPER_JAR="$ROOT_DIR/gradle/wrapper/gradle-wrapper.jar"
+VERIFIED_GRADLE="$ROOT_DIR/scripts/verified-gradle.sh"
 MOBILE_ACTIVITY="$ROOT_DIR/mobile/src/main/java/garethpaul/com/wearer/MainActivity.java"
 WEAR_ACTIVITY="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/MainActivity.java"
+WEAR_LAUNCHER="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/LauncherActivity.java"
 WEAR_SERVICE="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/WearMessageListenerService.java"
 MOBILE_MANIFEST="$ROOT_DIR/mobile/src/main/AndroidManifest.xml"
 WEAR_MANIFEST="$ROOT_DIR/wear/src/main/AndroidManifest.xml"
@@ -21,127 +33,233 @@ MOBILE_MESSAGE="$ROOT_DIR/mobile/src/main/java/garethpaul/com/wearer/WearMessage
 WEAR_MESSAGE="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/WearMessage.java"
 MOBILE_MESSAGE_TEST="$ROOT_DIR/mobile/src/test/java/garethpaul/com/wearer/WearMessageTest.java"
 WEAR_MESSAGE_TEST="$ROOT_DIR/wear/src/test/java/garethpaul/com/wearer/WearMessageTest.java"
-NULL_PAYLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-08-wear-message-null-payloads.md"
-PATH_CONTRACT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-message-path-contract-baseline.md"
-SEND_RESULT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-message-send-result-baseline.md"
-WEAR_RECEIVER_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-message-receiver-lifecycle.md"
-MOBILE_CLEAR_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-mobile-clear-input-guard.md"
-STARTUP_VIEW_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-startup-view-binding-guard.md"
-SEND_NODE_GUARD_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-mobile-send-node-guard.md"
-BLANK_MESSAGE_PLAN="$ROOT_DIR/docs/plans/2026-06-09-wear-mobile-blank-message-guard.md"
-CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
-SEND_STATE_PLAN="$ROOT_DIR/docs/plans/2026-06-10-wear-mobile-send-state.md"
-CONNECTION_STATE_PLAN="$ROOT_DIR/docs/plans/2026-06-10-wear-mobile-connection-state.md"
+CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
+CODEOWNERS="$ROOT_DIR/.github/CODEOWNERS"
 SEND_TIMEOUT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-mobile-send-timeouts.md"
+HISTORY_LIMIT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-message-history-limit.md"
+LISTENER_EXPORT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-listener-export-contract.md"
+WRAPPER_PLAN="$ROOT_DIR/docs/plans/2026-06-12-gradle-wrapper-verification.md"
 
-if [ ! -f "$ROOT_DIR/CHANGES.md" ]; then
-  printf '%s\n' "CHANGES.md must document repository maintenance." >&2
+require_sha256() {
+  file=$1
+  expected=$2
+  message=$3
+
+  if [ "$(sha256sum "$file" | awk '{print $1}')" != "$expected" ]; then
+    printf '%s\n' "$message" >&2
+    exit 1
+  fi
+}
+
+expected_wrapper_properties() {
+  cat <<'EOF'
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionSha256Sum=1d7c28b3731906fd1b2955946c1d052303881585fc14baedd675e4cf2bc1ecab
+distributionUrl=https\://services.gradle.org/distributions/gradle-2.2.1-all.zip
+networkTimeout=10000
+validateDistributionUrl=true
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+EOF
+}
+
+if git -C "$ROOT_DIR" ls-files -s | awk '$1 == "120000" { found = 1 } END { exit found ? 0 : 1 }'; then
+  printf '%s\n' "Tracked symbolic links are outside the audited repository baseline." >&2
   exit 1
 fi
 
-if ! grep -Fq "Android Wear Message API Changes" "$ROOT_DIR/CHANGES.md"; then
-  printf '%s\n' "CHANGES.md must identify the project." >&2
+manifest_paths=$(find "$ROOT_DIR/mobile/src" "$ROOT_DIR/wear/src" -type f -name 'AndroidManifest.xml' -print | LC_ALL=C sort)
+expected_manifest_paths=$(printf '%s\n' "$MOBILE_MANIFEST" "$WEAR_MANIFEST" | LC_ALL=C sort)
+if [ "$manifest_paths" != "$expected_manifest_paths" ]; then
+  printf '%s\n' "Mobile and Wear must keep exactly the audited manifests." >&2
   exit 1
 fi
 
-if [ ! -f "$NULL_PAYLOAD_PLAN" ]; then
-  printf '%s\n' "Wear message null payload plan is missing." >&2
+if find "$ROOT_DIR/mobile" "$ROOT_DIR/wear" -type f \
+  \( -name '*.so' -o -name '*.dex' -o -name '*.jar' -o -name '*.aar' -o -name '*.apk' \) \
+  ! -path '*/build/*' -print | grep -q .; then
+  printf '%s\n' "Packaged Android binary payloads are outside the auditable source baseline." >&2
   exit 1
 fi
 
-if ! grep -Fq "Status: Completed" "$NULL_PAYLOAD_PLAN" || ! grep -Fq "make check" "$NULL_PAYLOAD_PLAN"; then
-  printf '%s\n' "Wear message null payload plan must record completed status and make check verification." >&2
+gradle_paths=$(find "$ROOT_DIR" \
+  -path "$ROOT_DIR/.git" -prune -o \
+  -path "$ROOT_DIR/mobile/build" -prune -o \
+  -path "$ROOT_DIR/wear/build" -prune -o \
+  -type f \( -name '*.gradle' -o -name 'gradle.properties' -o -name 'gradle-wrapper.properties' \) \
+  -print | LC_ALL=C sort)
+expected_gradle_paths=$(printf '%s\n' \
+  "$MOBILE_BUILD" \
+  "$ROOT_BUILD" \
+  "$SETTINGS_GRADLE" \
+  "$GRADLE_PROPERTIES" \
+  "$WRAPPER_PROPERTIES" \
+  "$WEAR_BUILD" | LC_ALL=C sort)
+if [ "$gradle_paths" != "$expected_gradle_paths" ]; then
+  printf '%s\n' "The fixed legacy build must not add executable Gradle configuration." >&2
   exit 1
 fi
 
-if [ ! -f "$PATH_CONTRACT_PLAN" ]; then
-  printf '%s\n' "Wear message path contract plan is missing." >&2
+if [ -e "$ROOT_DIR/buildSrc" ] || [ -L "$ROOT_DIR/buildSrc" ]; then
+  printf '%s\n' "Gradle buildSrc is an unapproved implicit executable build input." >&2
   exit 1
 fi
 
-if ! grep -Fq "Status: Completed" "$PATH_CONTRACT_PLAN" || ! grep -Fq "make check" "$PATH_CONTRACT_PLAN"; then
-  printf '%s\n' "Wear message path contract plan must record completed status and make check verification." >&2
+if [ ! -x "$GRADLEW" ] || [ ! -f "$GRADLEW_BAT" ] || \
+   [ ! -f "$WRAPPER_JAR" ] || [ ! -f "$WRAPPER_PROPERTIES" ]; then
+  printf '%s\n' "Generated Gradle wrapper files must be present and gradlew must be executable." >&2
   exit 1
 fi
 
-if [ ! -f "$SEND_RESULT_PLAN" ]; then
-  printf '%s\n' "Wear message send result plan is missing." >&2
+if [ "$(cat "$WRAPPER_PROPERTIES")" != "$(expected_wrapper_properties)" ]; then
+  printf '%s\n' "Gradle wrapper properties must retain the reviewed Gradle 2.2.1 URL and checksum." >&2
   exit 1
 fi
 
-if ! grep -Fq "status: completed" "$SEND_RESULT_PLAN" || ! grep -Fq "make check" "$SEND_RESULT_PLAN"; then
-  printf '%s\n' "Wear message send result plan must record completed status and make check verification." >&2
+require_sha256 "$GRADLEW" "b187b4c52e749f5760afdd6fadc31b2a98ad35fb249bf0dff03b72650f320409" \
+  "The Unix Gradle wrapper must match the recorded trusted hash."
+require_sha256 "$GRADLEW_BAT" "94102713eb8fb22d032397924c0f38ab2da783ba60d07054339f1190a0c4e2cd" \
+  "The Windows Gradle wrapper must match the recorded trusted hash."
+require_sha256 "$WRAPPER_JAR" "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172" \
+  "The Gradle wrapper JAR must match Gradle's published 8.14.5 wrapper checksum."
+require_sha256 "$WRAPPER_PROPERTIES" "42874592f15508aa0a9135568ad3f9705b5f35bf987591bc73dd428f2250de5d" \
+  "The Gradle wrapper properties must match the reviewed URL and checksum contract."
+
+if ! grep -Fq "Gradle start up script for POSIX generated by Gradle." "$GRADLEW" || \
+   ! grep -Fq "Gradle startup script for Windows" "$GRADLEW_BAT"; then
+  printf '%s\n' "Gradle wrapper launchers must retain generated provenance markers." >&2
   exit 1
 fi
 
-if [ ! -f "$WEAR_RECEIVER_PLAN" ]; then
-  printf '%s\n' "Wear message receiver lifecycle plan is missing." >&2
+if [ ! -f "$WRAPPER_PLAN" ] || \
+   ! grep -Fq "status: completed" "$WRAPPER_PLAN" || \
+   ! grep -Fq "fresh temporary Gradle user home" "$WRAPPER_PLAN" || \
+   ! grep -Fq "incorrect checksum was rejected" "$WRAPPER_PLAN" || \
+   ! grep -Fq 'SDK-backed `make check` passed' "$WRAPPER_PLAN" || \
+   ! grep -Fq "external working directory" "$WRAPPER_PLAN" || \
+   ! grep -Fq "hostile mutations rejected" "$WRAPPER_PLAN"; then
+  printf '%s\n' "Gradle wrapper plan must record completed local verification evidence." >&2
   exit 1
 fi
 
-if ! grep -Fq "Status: Completed" "$WEAR_RECEIVER_PLAN" || ! grep -Fq "make check" "$WEAR_RECEIVER_PLAN"; then
-  printf '%s\n' "Wear message receiver lifecycle plan must record completed status and make check verification." >&2
+if ! grep -Fq "distributionSha256Sum" "$README_FILE" || \
+   ! grep -Fq "verified-gradle.sh" "$README_FILE" || \
+   ! grep -Fq "generated Gradle 8.14.5 bootstrap" "$SECURITY_FILE" || \
+   ! grep -Fq "checksum-verified direct wrapper" "$VISION_FILE" || \
+   ! grep -Fq "direct Gradle wrapper" "$CHANGES_FILE"; then
+  printf '%s\n' "Documentation must describe both authenticated Gradle launch paths." >&2
   exit 1
 fi
-
-if [ ! -f "$ROOT_DIR/.github/workflows/check.yml" ]; then
+if [ ! -f "$CI_WORKFLOW" ]; then
   printf '%s\n' "GitHub Actions check workflow is missing." >&2
   exit 1
 fi
 
+workflow_paths=$(find "$ROOT_DIR/.github/workflows" -type f \( -name '*.yml' -o -name '*.yaml' \) -print | LC_ALL=C sort)
+if [ "$workflow_paths" != "$CI_WORKFLOW" ]; then
+  printf '%s\n' "The canonical check workflow must be the only GitHub Actions workflow." >&2
+  exit 1
+fi
+
+if grep -E '^[[:space:]]*(-[[:space:]]+)?uses:' "$CI_WORKFLOW" | grep -Ev '@[0-9a-f]{40}([[:space:]]+#.*)?$' >/dev/null; then
+  printf '%s\n' "GitHub Actions must use immutable commit SHAs." >&2
+  exit 1
+fi
+
+workflow_uses=$(grep -E '^[[:space:]]*(-[[:space:]]+)?uses:' "$CI_WORKFLOW" | sed -E 's/^[[:space:]]*(-[[:space:]]+)?//' | LC_ALL=C sort)
+expected_workflow_uses=$(printf '%s\n' \
+  'uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3' \
+  'uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0' | LC_ALL=C sort)
+if [ "$workflow_uses" != "$expected_workflow_uses" ]; then
+  printf '%s\n' "GitHub Actions must use only the audited setup actions." >&2
+  exit 1
+fi
+
+if [ "$(grep -Ec '^[[:space:]]*permissions:' "$CI_WORKFLOW")" -ne 1 ] ||
+   grep -Eq 'write-all|contents:[[:space:]]*write|pull-requests:[[:space:]]*write|actions:[[:space:]]*write' "$CI_WORKFLOW"; then
+  printf '%s\n' "GitHub Actions permissions must remain globally read-only." >&2
+  exit 1
+fi
+
+if [ "$(grep -Ec '^[[:space:]]*(-[[:space:]]+)?run:' "$CI_WORKFLOW")" -ne 2 ] ||
+   ! grep -Fq 'run: '\''"${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-21" "build-tools;24.0.3"'\''' "$CI_WORKFLOW" ||
+   ! grep -Eq '^[[:space:]]*run: make check[[:space:]]*$' "$CI_WORKFLOW" ||
+   grep -Eq 'continue-on-error:[[:space:]]*true|if:[[:space:]]*false' "$CI_WORKFLOW"; then
+  printf '%s\n' "GitHub Actions must run exactly the required Make gate without bypasses." >&2
+  exit 1
+fi
+
 for workflow_contract in \
-  "permissions:" \
-  "contents: read" \
-  "runs-on: ubuntu-24.04" \
-  "cancel-in-progress: true" \
-  "timeout-minutes: 5" \
-  "workflow_dispatch:" \
-  "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" \
-  'ANDROID_HOME: ""' \
-  'ANDROID_SDK_ROOT: ""' \
-  "make check"; do
-  if ! grep -Fq "$workflow_contract" "$ROOT_DIR/.github/workflows/check.yml"; then
-    printf '%s\n' "GitHub Actions check workflow must keep contract: $workflow_contract" >&2
+  'push:' \
+  'branches:' \
+  '- master' \
+  'pull_request:' \
+  'workflow_dispatch:' \
+  'permissions:' \
+  'contents: read' \
+  'FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true' \
+  'runs-on: ubuntu-24.04' \
+  'timeout-minutes: 15' \
+  'cancel-in-progress: true' \
+  'persist-credentials: false' \
+  '"${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-21" "build-tools;24.0.3"' \
+  'java-version: "8"' \
+  'run: make check'; do
+  if ! grep -Fq -- "$workflow_contract" "$CI_WORKFLOW"; then
+    printf '%s\n' "GitHub Actions workflow must keep contract: $workflow_contract" >&2
     exit 1
   fi
 done
 
+if ! awk '
+  /^  pull_request:$/ {
+    found = 1
+    if (getline <= 0 || $0 != "  workflow_dispatch:") exit 1
+  }
+  END { if (!found) exit 1 }
+' "$CI_WORKFLOW"; then
+  printf '%s\n' "Pull request verification must apply without branch restrictions." >&2
+  exit 1
+fi
+
+android_setup_line=$(grep -n 'cmdline-tools/latest/bin/sdkmanager' "$CI_WORKFLOW" | cut -d: -f1)
+java_setup_line=$(grep -n 'actions/setup-java@' "$CI_WORKFLOW" | cut -d: -f1)
+if [ -z "$android_setup_line" ] || [ -z "$java_setup_line" ] || [ "$android_setup_line" -ge "$java_setup_line" ]; then
+  printf '%s\n' "Android SDK installation must run under the runner JDK before selecting Java 8 for Gradle." >&2
+  exit 1
+fi
+
+codeowner_rules=$(grep -Ev '^[[:space:]]*(#|$)' "$CODEOWNERS" 2>/dev/null || true)
+if [ "$codeowner_rules" != '* @garethpaul' ]; then
+  printf '%s\n' "CODEOWNERS must protect repository and module trust boundaries." >&2
+  exit 1
+fi
+
 for make_contract in \
   'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' \
-  'ANDROID_SDK := $(if $(ANDROID_HOME),$(ANDROID_HOME),$(ANDROID_SDK_ROOT))'; do
+  'ANDROID_SDK := $(if $(ANDROID_HOME),$(ANDROID_HOME),$(ANDROID_SDK_ROOT))' \
+  'GRADLE ?= $(ROOT)scripts/verified-gradle.sh'; do
   if ! grep -Fq "$make_contract" "$ROOT_DIR/Makefile"; then
     printf '%s\n' "Makefile must keep contract: $make_contract" >&2
     exit 1
   fi
 done
 
+for gradle_contract in \
+  'https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-all.zip' \
+  '1d7c28b3731906fd1b2955946c1d052303881585fc14baedd675e4cf2bc1ecab' \
+  'curl --fail --location --silent --show-error' \
+  'sha256sum "$download"' \
+  'exec "$GRADLE_INSTALLATION/bin/gradle" "$@"'; do
+  if ! grep -Fq "$gradle_contract" "$VERIFIED_GRADLE"; then
+    printf '%s\n' "Verified Gradle launcher must keep contract: $gradle_contract" >&2
+    exit 1
+  fi
+done
+
 if grep -Eq '/(home|Users)/[^/]+/.+android-sdk' "$ROOT_DIR/Makefile"; then
   printf '%s\n' "Makefile must not embed a maintainer-specific Android SDK path." >&2
-  exit 1
-fi
-
-if ! grep -Fq "GitHub Actions" "$ROOT_DIR/README.md"; then
-  printf '%s\n' "README must document the GitHub Actions check." >&2
-  exit 1
-fi
-
-if [ ! -f "$MOBILE_CLEAR_PLAN" ]; then
-  printf '%s\n' "Wear mobile clear-input guard plan is missing." >&2
-  exit 1
-fi
-
-if ! grep -Fq "status: completed" "$MOBILE_CLEAR_PLAN" || ! grep -Fq "make check" "$MOBILE_CLEAR_PLAN"; then
-  printf '%s\n' "Wear mobile clear-input guard plan must record completed status and make check verification." >&2
-  exit 1
-fi
-
-if [ ! -f "$STARTUP_VIEW_PLAN" ]; then
-  printf '%s\n' "Wear startup view binding guard plan is missing." >&2
-  exit 1
-fi
-
-if ! grep -Fq "status: completed" "$STARTUP_VIEW_PLAN" || ! grep -Fq "make check" "$STARTUP_VIEW_PLAN"; then
-  printf '%s\n' "Wear startup view binding guard plan must record completed status and make check verification." >&2
   exit 1
 fi
 
@@ -184,6 +302,16 @@ for build_file in "$MOBILE_BUILD" "$WEAR_BUILD"; do
     printf '%s\n' "Both modules must declare JUnit for WearMessage tests." >&2
     exit 1
   fi
+
+  dependency_lines=$(grep -E '^[[:space:]]*(compile|testCompile)[[:space:]]' "$build_file" | sed 's/^[[:space:]]*//' | LC_ALL=C sort)
+  expected_dependency_lines=$(printf '%s\n' \
+    "compile 'com.google.android.gms:play-services-wearable:7.0.0'" \
+    "compile fileTree(dir: 'libs', include: ['*.jar'])" \
+    "testCompile 'junit:junit:4.12'" | LC_ALL=C sort)
+  if [ "$dependency_lines" != "$expected_dependency_lines" ]; then
+    printf '%s\n' "Android modules must keep the reviewed dependency inventory." >&2
+    exit 1
+  fi
 done
 
 for lint_file in "$MOBILE_LINT" "$WEAR_LINT"; do
@@ -213,6 +341,65 @@ done
 
 if ! grep -Fq 'android:theme="@style/WearTheme"' "$WEAR_MANIFEST"; then
   printf '%s\n' "Wear manifest must use the tracked WearTheme." >&2
+  exit 1
+fi
+
+main_activity_manifest=$(awk '/android:name=".MainActivity"/ { capture = 1 } capture { print } capture && />/ { exit }' "$WEAR_MANIFEST")
+launcher_activity_manifest=$(awk '/android:name=".LauncherActivity"/ { capture = 1 } capture { print } capture && />/ { exit }' "$WEAR_MANIFEST")
+if ! printf '%s\n' "$main_activity_manifest" | grep -Fq 'android:exported="false"' ||
+   ! printf '%s\n' "$launcher_activity_manifest" | grep -Fq 'android:exported="true"'; then
+  printf '%s\n' "Wear message UI must be private and its launcher explicitly exported." >&2
+  exit 1
+fi
+
+if [ "$(grep -Fc 'android:name=".WearMessageListenerService"' "$WEAR_MANIFEST")" -ne 1 ]; then
+  printf '%s\n' "Wear manifest must declare exactly one listener service." >&2
+  exit 1
+fi
+wear_listener_manifest=$(awk '/android:name=".WearMessageListenerService"/ { capture = 1 } capture { print } capture && /<\/service>/ { exit }' "$WEAR_MANIFEST")
+if [ "$(printf '%s\n' "$wear_listener_manifest" | grep -Fc 'android:exported="true"')" -ne 1 ]; then
+  printf '%s\n' "Wear listener service must state its required exported policy explicitly." >&2
+  exit 1
+fi
+if [ "$(printf '%s\n' "$wear_listener_manifest" | grep -c '<action ' || true)" -ne 1 ] ||
+   ! printf '%s\n' "$wear_listener_manifest" | grep -Fq '<action android:name="com.google.android.gms.wearable.BIND_LISTENER" />'; then
+  printf '%s\n' "Exported Wear listener must keep exactly the required BIND_LISTENER action." >&2
+  exit 1
+fi
+
+if [ ! -f "$LISTENER_EXPORT_PLAN" ] ||
+   ! grep -Fq "Status: Completed" "$LISTENER_EXPORT_PLAN" ||
+   ! grep -Fq "CodeQL alert 1" "$LISTENER_EXPORT_PLAN" ||
+   ! grep -Fq "fresh external clone" "$LISTENER_EXPORT_PLAN" ||
+   ! grep -Fq "lint with zero issues" "$LISTENER_EXPORT_PLAN" ||
+   ! grep -Fq "All 13 focused service declaration" "$LISTENER_EXPORT_PLAN" ||
+   ! grep -Fq "ac0428a132e59fb001b32043364f1e16b668d486" "$LISTENER_EXPORT_PLAN" ||
+   ! grep -Fq 'pull-request run `27404104907` and CodeQL run `27404102731`' "$LISTENER_EXPORT_PLAN" ||
+   ! grep -Fq "zero open code-scanning alerts" "$LISTENER_EXPORT_PLAN"; then
+  printf '%s\n' "Wear listener export plan must record completed hosted verification." >&2
+  exit 1
+fi
+if ! grep -Fq "explicitly exported only" "$README_FILE" ||
+   ! grep -Fq "single legacy" "$ROOT_DIR/SECURITY.md" ||
+   ! grep -Fq "listener service export policy explicit" "$ROOT_DIR/CHANGES.md"; then
+  printf '%s\n' "Documentation must record the explicit Wear listener trust boundary." >&2
+  exit 1
+fi
+
+for launcher_contract in \
+  'new Intent(this, MainActivity.class)' \
+  'Intent.FLAG_ACTIVITY_CLEAR_TOP' \
+  'Intent.FLAG_ACTIVITY_SINGLE_TOP' \
+  'startActivity(intent)' \
+  'finish()'; do
+  if ! grep -Fq "$launcher_contract" "$WEAR_LAUNCHER"; then
+    printf '%s\n' "Wear launcher must discard external extras before opening the private message UI." >&2
+    exit 1
+  fi
+done
+
+if grep -Eq 'getIntent\(|getExtras\(|putExtra\(|putExtras\(' "$WEAR_LAUNCHER"; then
+  printf '%s\n' "Wear launcher must not forward externally supplied extras." >&2
   exit 1
 fi
 
@@ -280,7 +467,16 @@ for timeout_contract in \
   fi
 done
 
-if grep -Fq ".await();" "$MOBILE_ACTIVITY"; then
+if [ "$(grep -Fc "private static final long MESSAGE_OPERATION_TIMEOUT_SECONDS = 5L;" "$MOBILE_ACTIVITY" || true)" -ne 1 ] || \
+   [ "$(grep -Fc "import java.util.concurrent.TimeUnit;" "$MOBILE_ACTIVITY" || true)" -ne 1 ] || \
+   [ "$(grep -Ec '\.await[[:space:]]*\(' "$MOBILE_ACTIVITY" || true)" -ne 2 ] || \
+   [ "$(grep -Fc "MESSAGE_OPERATION_TIMEOUT_SECONDS" "$MOBILE_ACTIVITY" || true)" -ne 3 ] || \
+   [ "$(grep -Fc "TimeUnit.SECONDS" "$MOBILE_ACTIVITY" || true)" -ne 2 ]; then
+  printf '%s\n' "Mobile Wear node lookup and message send must each use the shared timeout exactly once." >&2
+  exit 1
+fi
+
+if grep -Eq '\.await[[:space:]]*\([[:space:]]*\)' "$MOBILE_ACTIVITY"; then
   printf '%s\n' "Mobile Wear operations must not block indefinitely." >&2
   exit 1
 fi
@@ -309,7 +505,7 @@ if ! grep -Fq "result != null && result.getStatus() != null" "$MOBILE_ACTIVITY" 
 fi
 
 for send_state_contract in \
-  "if (TextUtils.isEmpty(text) || messageSendInProgress || !isWearConnected())" \
+  "if (TextUtils.isEmpty(text) || !WearMessage.isValidMessageText(text)" \
   "messageSendInProgress = true" \
   "private boolean wearConnected;" \
   "private boolean isWearConnected()" \
@@ -410,28 +606,36 @@ if ! grep -Fq "if( mListView == null || mEditText == null || mSendButton == null
   exit 1
 fi
 
-if ! grep -Fq "WearMessage.decode(messageEvent.getData())" "$WEAR_ACTIVITY"; then
-  printf '%s\n' "Wear messages must decode payloads as UTF-8." >&2
-  exit 1
-fi
+for delivery_contract in \
+  "WearMessage.isWearMessagePath(messageEvent.getPath())" \
+  "WearMessage.isValidPayload(messageEvent.getData())" \
+  "startWearActivity(WearMessage.decode(messageEvent.getData()))" \
+  "Intent.FLAG_ACTIVITY_CLEAR_TOP" \
+  "Intent.FLAG_ACTIVITY_SINGLE_TOP" \
+  "intent.putExtra(WearMessage.EXTRA_MESSAGE, message)"; do
+  if ! grep -Fq "$delivery_contract" "$WEAR_SERVICE"; then
+    printf '%s\n' "Missing service-owned Wear message delivery contract: $delivery_contract" >&2
+    exit 1
+  fi
+done
 
-if ! grep -Fq "messageEvent == null || !WearMessage.isWearMessagePath(messageEvent.getPath())" "$WEAR_ACTIVITY"; then
-  printf '%s\n' "Wear message receiver must ignore null events and non-message paths before UI dispatch." >&2
-  exit 1
-fi
+for activity_contract in \
+  "protected void onNewIntent(Intent intent)" \
+  "intent.hasExtra(WearMessage.EXTRA_MESSAGE)" \
+  "String message = intent.getStringExtra(WearMessage.EXTRA_MESSAGE)" \
+  "intent.removeExtra(WearMessage.EXTRA_MESSAGE)" \
+  "WearMessage.isValidMessageText(message)" \
+  "addWearMessage(message)" \
+  "private void addWearMessage(String text)" \
+  "if (mAdapter == null)"; do
+  if ! grep -Fq "$activity_contract" "$WEAR_ACTIVITY"; then
+    printf '%s\n' "Missing Wear activity intent-delivery contract: $activity_contract" >&2
+    exit 1
+  fi
+done
 
-if ! grep -Fq "final String text = WearMessage.decode(messageEvent.getData())" "$WEAR_ACTIVITY"; then
-  printf '%s\n' "Wear message receiver must decode payloads before posting UI work." >&2
-  exit 1
-fi
-
-if ! grep -Fq "private void addWearMessage( String text )" "$WEAR_ACTIVITY"; then
-  printf '%s\n' "Wear message receiver must isolate adapter updates behind a helper." >&2
-  exit 1
-fi
-
-if ! grep -Fq "if( mAdapter == null )" "$WEAR_ACTIVITY"; then
-  printf '%s\n' "Wear message receiver must tolerate callbacks when the adapter is unavailable." >&2
+if grep -Eq 'MessageApi\.MessageListener|Wearable\.MessageApi\.addListener|onMessageReceived\(' "$WEAR_ACTIVITY"; then
+  printf '%s\n' "Wear activity must not restore listener-registration timing dependence." >&2
   exit 1
 fi
 
@@ -497,7 +701,45 @@ for message_file in "$MOBILE_MESSAGE" "$WEAR_MESSAGE"; do
     printf '%s\n' "WearMessage must null-guard text message path checks." >&2
     exit 1
   fi
+  if ! grep -Fq "MAX_MESSAGE_BYTES = 4096" "$message_file" || \
+     ! grep -Fq "static boolean isValidMessageText(String text)" "$message_file"; then
+    printf '%s\n' "WearMessage must enforce the shared text payload bound." >&2
+    exit 1
+  fi
+  if ! grep -Eq '^[[:space:]]*static final int MAX_HISTORY_ENTRIES = 100;[[:space:]]*$' "$message_file" || \
+     ! grep -Fq "static boolean shouldRemoveOldestHistoryEntry(int currentEntryCount)" "$message_file" || \
+     ! grep -Fq "return currentEntryCount >= MAX_HISTORY_ENTRIES;" "$message_file"; then
+    printf '%s\n' "WearMessage must enforce the shared visible history bound." >&2
+    exit 1
+  fi
 done
+
+for activity_file in "$MOBILE_ACTIVITY" "$WEAR_ACTIVITY"; do
+  if ! grep -Fq "while (WearMessage.shouldRemoveOldestHistoryEntry(mAdapter.getCount()))" "$activity_file" || \
+     ! grep -Fq "mAdapter.remove(mAdapter.getItem(0));" "$activity_file"; then
+    printf '%s\n' "Activities must evict oldest messages before appending at the history limit." >&2
+    exit 1
+  fi
+done
+
+if [ ! -f "$HISTORY_LIMIT_PLAN" ] || \
+   ! grep -Fq "Status: Completed" "$HISTORY_LIMIT_PLAN" || \
+   ! grep -Fq "make check" "$HISTORY_LIMIT_PLAN" || \
+   ! grep -Fq "external working directory" "$HISTORY_LIMIT_PLAN"; then
+  printf '%s\n' "Wear message history limit plan must record completed verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "visible message histories retain only the newest 100 entries" "$README_FILE" || \
+   ! grep -Fq "2026-06-12-wear-message-history-limit.md" "$README_FILE"; then
+  printf '%s\n' "README must document the visible message history bound and plan." >&2
+  exit 1
+fi
+
+if ! grep -Fq "static boolean isValidPayload(byte[] data)" "$WEAR_MESSAGE"; then
+  printf '%s\n' "WearMessage must validate incoming Wear payload bytes." >&2
+  exit 1
+fi
 
 for test_file in "$MOBILE_MESSAGE_TEST" "$WEAR_MESSAGE_TEST"; do
   if ! grep -Fq "recognizesStartActivityPathCaseInsensitively" "$test_file"; then
@@ -526,6 +768,45 @@ for test_file in "$MOBILE_MESSAGE_TEST" "$WEAR_MESSAGE_TEST"; do
   fi
   if ! grep -Fq "clearsOnlyMatchingCurrentInput" "$test_file"; then
     printf '%s\n' "WearMessage tests must cover matching-input cleanup." >&2
+    exit 1
+  fi
+  if ! grep -Fq "acceptsOnlyBoundedNonBlankMessages" "$test_file"; then
+    printf '%s\n' "WearMessage tests must cover UTF-8 message boundaries." >&2
+    exit 1
+  fi
+  if ! grep -Fq "removesOldestEntryAtHistoryLimit" "$test_file" || \
+     ! grep -Fq "WearMessage.MAX_HISTORY_ENTRIES - 1" "$test_file" || \
+     ! grep -Fq "WearMessage.MAX_HISTORY_ENTRIES + 1" "$test_file"; then
+    printf '%s\n' "WearMessage tests must cover visible history boundaries." >&2
+    exit 1
+  fi
+done
+
+
+for boundary_contract in \
+  "repeat('x', WearMessage.MAX_MESSAGE_BYTES)" \
+  "repeat('x', WearMessage.MAX_MESSAGE_BYTES + 1)" \
+  "repeat('\\u00e9', WearMessage.MAX_MESSAGE_BYTES / 2)" \
+  "repeat('\\u00e9', WearMessage.MAX_MESSAGE_BYTES / 2 + 1)"; do
+  for test_file in "$MOBILE_MESSAGE_TEST" "$WEAR_MESSAGE_TEST"; do
+    if ! grep -Fq "$boundary_contract" "$test_file"; then
+      printf '%s\n' "WearMessage tests must retain exact ASCII and UTF-8 boundary assertion: $boundary_contract" >&2
+      exit 1
+    fi
+  done
+done
+
+
+if ! grep -Fq "acceptsOnlyBoundedNonEmptyPayloads" "$WEAR_MESSAGE_TEST"; then
+  printf '%s\n' "Wear tests must cover incoming payload boundaries." >&2
+  exit 1
+fi
+
+for payload_contract in \
+  'new byte[WearMessage.MAX_MESSAGE_BYTES]' \
+  'new byte[WearMessage.MAX_MESSAGE_BYTES + 1]'; do
+  if ! grep -Fq "$payload_contract" "$WEAR_MESSAGE_TEST"; then
+    printf '%s\n' "Wear payload tests must retain exact byte boundary assertion: $payload_contract" >&2
     exit 1
   fi
 done
@@ -585,11 +866,6 @@ if git -C "$ROOT_DIR" ls-files '.idea/*' '*.iml' | grep -q .; then
   exit 1
 fi
 
-if ! grep -Fq "scripts/check-baseline.sh" "$ROOT_DIR/README.md"; then
-  printf '%s\n' "README must document the baseline check." >&2
-  exit 1
-fi
-
 if [ ! -f "$ROOT_DIR/Makefile" ]; then
   printf '%s\n' "Makefile is missing." >&2
   exit 1
@@ -620,120 +896,13 @@ if ! grep -Fq "verify: lint test build" "$ROOT_DIR/Makefile"; then
   exit 1
 fi
 
-if ! grep -Fq "make check" "$ROOT_DIR/README.md"; then
-  printf '%s\n' "README must document the make check wrapper." >&2
-  exit 1
-fi
-
-if ! grep -Fq "./gradlew lint --no-daemon" "$ROOT_DIR/README.md"; then
-  printf '%s\n' "README must document the lint gate." >&2
-  exit 1
-fi
-
-if ! grep -Fq "./gradlew test --no-daemon" "$ROOT_DIR/README.md"; then
-  printf '%s\n' "README must document the unit test gate." >&2
-  exit 1
-fi
-
-if ! grep -Fq "./gradlew assembleDebug --no-daemon" "$ROOT_DIR/README.md"; then
-  printf '%s\n' "README must document the debug assemble gate." >&2
-  exit 1
-fi
-
-if ! grep -Fq "CHANGES.md" "$ROOT_DIR/README.md"; then
-  printf '%s\n' "README must point to CHANGES.md." >&2
-  exit 1
-fi
-
-if ! grep -Fq "wear listener service ignores null message events" "$ROOT_DIR/README.md"; then
-  printf '%s\n' "README must document wear listener null-event handling." >&2
-  exit 1
-fi
-
-if ! grep -Fq "preserves edits made while a send is in flight" "$ROOT_DIR/README.md"; then
-  printf '%s\n' "README must document matching-input cleanup." >&2
-  exit 1
-fi
-
-if ! grep -Fq "mobile and wear activities validate required startup views before connecting" "$ROOT_DIR/README.md"; then
-  printf '%s\n' "README must document startup view binding validation." >&2
-  exit 1
-fi
-
-if ! grep -Fq "mobile sends guard missing connected-node results" "$ROOT_DIR/README.md"; then
-  printf '%s\n' "README must document mobile connected-node send guards." >&2
-  exit 1
-fi
-
-if ! grep -Fq "mobile sender normalizes typed text and ignores whitespace-only messages" "$ROOT_DIR/README.md"; then
-  printf '%s\n' "README must document mobile blank-message handling." >&2
-  exit 1
-fi
-
-if ! grep -Fq "records messages only after a paired node accepts them" "$ROOT_DIR/README.md"; then
-  printf '%s\n' "README must document confirmed-send history." >&2
-  exit 1
-fi
-
 if ! grep -Fq "mobile sender bounds node lookup and message delivery waits" "$ROOT_DIR/README.md"; then
   printf '%s\n' "README must document bounded Wear send waits." >&2
   exit 1
 fi
 
-if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-wear-listener-null-event-guard.md"; then
-  printf '%s\n' "Wear listener null-event guard plan must document make check verification." >&2
+if ! grep -Fq "docs/plans/2026-06-12-wear-mobile-send-timeouts.md" "$ROOT_DIR/README.md"; then
+  printf '%s\n' "README must link the Wear send timeout plan." >&2
   exit 1
 fi
-
-if [ ! -f "$SEND_NODE_GUARD_PLAN" ]; then
-  printf '%s\n' "Wear mobile send node guard plan is missing." >&2
-  exit 1
-fi
-
-if ! grep -Fq "status: completed" "$SEND_NODE_GUARD_PLAN" || ! grep -Fq "make check" "$SEND_NODE_GUARD_PLAN"; then
-  printf '%s\n' "Wear mobile send node guard plan must record completed status and make check verification." >&2
-  exit 1
-fi
-
-if [ ! -f "$BLANK_MESSAGE_PLAN" ]; then
-  printf '%s\n' "Wear mobile blank message guard plan is missing." >&2
-  exit 1
-fi
-
-if ! grep -Fq "status: completed" "$BLANK_MESSAGE_PLAN" || ! grep -Fq "make check" "$BLANK_MESSAGE_PLAN"; then
-  printf '%s\n' "Wear mobile blank message guard plan must record completed status and make check verification." >&2
-  exit 1
-fi
-
-if [ ! -f "$CI_PLAN" ]; then
-  printf '%s\n' "Wear message CI baseline plan is missing." >&2
-  exit 1
-fi
-
-if ! grep -Fq "status: completed" "$CI_PLAN" || ! grep -Fq "make check" "$CI_PLAN"; then
-  printf '%s\n' "Wear message CI baseline plan must record completed status and make check verification." >&2
-  exit 1
-fi
-
-if [ ! -f "$SEND_STATE_PLAN" ]; then
-  printf '%s\n' "Wear mobile send-state plan is missing." >&2
-  exit 1
-fi
-
-if ! grep -Fq "Status: Completed" "$SEND_STATE_PLAN" || ! grep -Fq "make check" "$SEND_STATE_PLAN"; then
-  printf '%s\n' "Wear mobile send-state plan must record completed status and make check verification." >&2
-  exit 1
-fi
-
-if [ ! -f "$CONNECTION_STATE_PLAN" ]; then
-  printf '%s\n' "Wear mobile connection-state plan is missing." >&2
-  exit 1
-fi
-
-if ! grep -Fq "Status: Completed" "$CONNECTION_STATE_PLAN" || \
-   ! grep -Fq "make check" "$CONNECTION_STATE_PLAN"; then
-  printf '%s\n' "Wear mobile connection-state plan must record completed status and make check verification." >&2
-  exit 1
-fi
-
 printf '%s\n' "Android Wear Message API baseline checks passed."

@@ -32,12 +32,35 @@ Helpful reports include:
 - Pinned, read-only GitHub Actions runs the guarded `make check` baseline;
   review workflow, Gradle, and checker changes as part of the supply-chain
   surface.
+- Wear message payloads are bounded to 4096 bytes, and the listener service
+  owns delivery so messages do not depend on activity registration timing.
+- Hosted checkout credentials are not persisted. Repository-wide CODEOWNERS
+  and focused baseline checks cover CI, Gradle, wrapper, and module boundaries;
+  repository rules should require owner approval and `Check / check`.
+- Alternate manifests, packaged binaries, symlinks, hidden Gradle inputs, and
+  `buildSrc` are rejected without freezing ordinary source and test edits.
+- Hosted CI provisions pinned Java 8 and Android API 21 tooling and requires
+  Gradle lint, unit tests, and debug assembly instead of accepting SDK skips.
+- The Make targets download Gradle 2.2.1 from the official service and verify
+  its published SHA-256 checksum before running any build logic.
+- The exported Wear launcher strips external extras before opening the private
+  message activity, which validates the bounded service payload again.
+- The Wear listener service is explicitly exported for the single legacy
+  Google Play services `BIND_LISTENER` action required for background data-layer
+  delivery; manifest contracts reject additional listener actions.
 
 ## Mobile Privacy Notes
 
 If this project requests device permissions such as location, camera, microphone, contacts, Bluetooth, health data, or local storage access, reports should describe the permission involved and whether sensitive data can be accessed, persisted, or transmitted unexpectedly. Please avoid testing against real third-party user data or accounts you do not control.
 
 ## Dependency and Supply Chain Security
+
+The generated Gradle 8.14.5 bootstrap retains the legacy Gradle 2.2.1 runtime
+required by Android Gradle Plugin 1.1.0. Review all four wrapper files together;
+the SDK-free baseline rejects drift from Gradle's published wrapper JAR and
+distribution SHA-256 values. Root Make targets remain independently routed
+through `scripts/verified-gradle.sh`, which verifies the same official archive.
+Both paths require Gradle HTTPS access when their caches are empty.
 
 Dependency updates should come from trusted package managers and should keep lockfiles in sync when lockfiles exist. Do not commit credentials, private keys, tokens, generated secrets, or machine-local configuration. If a vulnerability depends on a compromised package, typosquatting risk, insecure transitive dependency, or unsafe build step, include the package name, affected version, and the path through which it is used.
 

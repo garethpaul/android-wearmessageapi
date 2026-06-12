@@ -5,6 +5,9 @@ import java.nio.charset.Charset;
 final class WearMessage {
     static final String START_ACTIVITY = "/start_activity";
     static final String WEAR_MESSAGE_PATH = "/message";
+    static final String EXTRA_MESSAGE = "garethpaul.com.wearer.MESSAGE";
+    static final int MAX_MESSAGE_BYTES = 4096;
+    static final int MAX_HISTORY_ENTRIES = 100;
     private static final Charset MESSAGE_CHARSET = Charset.forName("UTF-8");
 
     private WearMessage() {
@@ -31,10 +34,24 @@ final class WearMessage {
         return text.toString().trim();
     }
 
+    static boolean isValidMessageText(String text) {
+        String normalizedText = normalizeText(text);
+        return normalizedText.length() > 0
+                && encode(normalizedText).length <= MAX_MESSAGE_BYTES;
+    }
+
+    static boolean isValidPayload(byte[] data) {
+        return data != null && data.length > 0 && data.length <= MAX_MESSAGE_BYTES;
+    }
+
     static boolean shouldClearInput(CharSequence currentText, String sentText) {
         String normalizedSentText = normalizeText(sentText);
         return normalizedSentText.length() > 0
                 && normalizedSentText.equals(normalizeText(currentText));
+    }
+
+    static boolean shouldRemoveOldestHistoryEntry(int currentEntryCount) {
+        return currentEntryCount >= MAX_HISTORY_ENTRIES;
     }
 
     static boolean isStartActivityPath(String path) {

@@ -87,7 +87,8 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
             @Override
             public void onClick(View view) {
                 String text = WearMessage.normalizeText(mEditText.getText());
-                if (TextUtils.isEmpty(text) || messageSendInProgress || !isWearConnected()) {
+                if (TextUtils.isEmpty(text) || !WearMessage.isValidMessageText(text)
+                        || messageSendInProgress || !isWearConnected()) {
                     return;
                 }
 
@@ -180,6 +181,9 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
                 }
 
                 if (mAdapter != null) {
+                    while (WearMessage.shouldRemoveOldestHistoryEntry(mAdapter.getCount())) {
+                        mAdapter.remove(mAdapter.getItem(0));
+                    }
                     mAdapter.add(sentText);
                     mAdapter.notifyDataSetChanged();
                 }
