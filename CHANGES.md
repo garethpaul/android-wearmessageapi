@@ -18,6 +18,8 @@
   packaged binaries, symlinks, hidden Gradle inputs, and `buildSrc`.
 - Split the exported launcher from the private message activity so external
   intents cannot inject unbounded or spoofed message extras.
+- Bounded connected-node lookup and per-node message delivery waits so stalled
+  Wear transport operations cannot retain sender threads indefinitely.
 
 ## 2026-06-10
 

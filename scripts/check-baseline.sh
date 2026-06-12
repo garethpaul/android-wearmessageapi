@@ -31,6 +31,7 @@ MOBILE_MESSAGE_TEST="$ROOT_DIR/mobile/src/test/java/garethpaul/com/wearer/WearMe
 WEAR_MESSAGE_TEST="$ROOT_DIR/wear/src/test/java/garethpaul/com/wearer/WearMessageTest.java"
 CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 CODEOWNERS="$ROOT_DIR/.github/CODEOWNERS"
+SEND_TIMEOUT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-mobile-send-timeouts.md"
 
 require_sha256() {
   file=$1
@@ -358,6 +359,39 @@ fi
 
 if ! grep -Fq "MessageApi.SendMessageResult result" "$MOBILE_ACTIVITY"; then
   printf '%s\n' "Mobile message sends must inspect the Wear message result." >&2
+  exit 1
+fi
+
+for timeout_contract in \
+  "private static final long MESSAGE_OPERATION_TIMEOUT_SECONDS = 5L;" \
+  "import java.util.concurrent.TimeUnit;" \
+  ".await(MESSAGE_OPERATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)" \
+  "MESSAGE_OPERATION_TIMEOUT_SECONDS," \
+  "TimeUnit.SECONDS);"; do
+  if ! grep -Fq "$timeout_contract" "$MOBILE_ACTIVITY"; then
+    printf '%s\n' "Mobile Wear operations must keep bounded wait contract: $timeout_contract" >&2
+    exit 1
+  fi
+done
+
+if [ "$(grep -Fc "private static final long MESSAGE_OPERATION_TIMEOUT_SECONDS = 5L;" "$MOBILE_ACTIVITY" || true)" -ne 1 ] || \
+   [ "$(grep -Fc "import java.util.concurrent.TimeUnit;" "$MOBILE_ACTIVITY" || true)" -ne 1 ] || \
+   [ "$(grep -Ec '\.await[[:space:]]*\(' "$MOBILE_ACTIVITY" || true)" -ne 2 ] || \
+   [ "$(grep -Fc "MESSAGE_OPERATION_TIMEOUT_SECONDS" "$MOBILE_ACTIVITY" || true)" -ne 3 ] || \
+   [ "$(grep -Fc "TimeUnit.SECONDS" "$MOBILE_ACTIVITY" || true)" -ne 2 ]; then
+  printf '%s\n' "Mobile Wear node lookup and message send must each use the shared timeout exactly once." >&2
+  exit 1
+fi
+
+if grep -Eq '\.await[[:space:]]*\([[:space:]]*\)' "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile Wear operations must not block indefinitely." >&2
+  exit 1
+fi
+
+if [ ! -f "$SEND_TIMEOUT_PLAN" ] || \
+   ! grep -Fq "Status: Completed" "$SEND_TIMEOUT_PLAN" || \
+   ! grep -Fq "make check" "$SEND_TIMEOUT_PLAN"; then
+  printf '%s\n' "Wear mobile send timeout plan must record completed make check verification." >&2
   exit 1
 fi
 
@@ -735,4 +769,13 @@ if ! grep -Fq "verify: lint test build" "$ROOT_DIR/Makefile"; then
   exit 1
 fi
 
+if ! grep -Fq "mobile sender bounds node lookup and message delivery waits" "$ROOT_DIR/README.md"; then
+  printf '%s\n' "README must document bounded Wear send waits." >&2
+  exit 1
+fi
+
+if ! grep -Fq "docs/plans/2026-06-12-wear-mobile-send-timeouts.md" "$ROOT_DIR/README.md"; then
+  printf '%s\n' "README must link the Wear send timeout plan." >&2
+  exit 1
+fi
 printf '%s\n' "Android Wear Message API baseline checks passed."

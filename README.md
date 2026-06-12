@@ -124,6 +124,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   disconnected sender.
 - The mobile sends guard missing connected-node results, node IDs, send
   results, and statuses before clearing input.
+- The mobile sender bounds node lookup and message delivery waits so stalled
+  Wear transport operations fall back to the existing send-failure path.
 - The mobile sender normalizes typed text and ignores whitespace-only messages
   before adding or sending them.
 - The mobile and wear activities validate required startup views before connecting
@@ -153,6 +155,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   service delivery and payload bounds.
 - See `docs/plans/2026-06-10-wear-mobile-send-state.md` for the confirmed-send
   history and matching-input cleanup contract.
+- See `docs/plans/2026-06-12-wear-mobile-send-timeouts.md` for bounded node
+  lookup and per-node delivery waits.
 
 ## Contributing
 
