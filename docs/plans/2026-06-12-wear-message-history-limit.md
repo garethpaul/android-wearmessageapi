@@ -1,6 +1,6 @@
 # Wear Message History Limit
 
-## Status: Planned
+## Status: Completed
 
 ## Context
 
@@ -27,12 +27,15 @@ send confirmation, payload validation, and service-delivery behavior.
 
 ## Verification
 
-- Run the focused mobile and Wear JVM tests when the Android SDK is available.
-- Run `make check` from the repository root and from an external working
-  directory.
-- Run hostile checker mutations for the limit, helper, activity integration,
-  tests, documentation, and completed-plan evidence.
-- Run `git diff --check`.
+- Passed focused mobile and Wear JVM tests with
+  `ANDROID_HOME=/home/gjones/android-sdk ANDROID_SDK_ROOT=/home/gjones/android-sdk make test`.
+- Passed full lint, unit-test, and debug-build verification with
+  `ANDROID_HOME=/home/gjones/android-sdk ANDROID_SDK_ROOT=/home/gjones/android-sdk make check`.
+- Passed the same full `make check` gate from an external working directory.
+- Confirmed seven hostile mutations are rejected for limit drift, predicate
+  weakening, activity bypass, missing tests, documentation drift, incomplete
+  plan status, and missing plan verification.
+- Passed `git diff --check`.
 
 ## Boundaries
 

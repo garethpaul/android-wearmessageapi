@@ -3,6 +3,7 @@ set -eu
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 ROOT_BUILD="$ROOT_DIR/build.gradle"
+README_FILE="$ROOT_DIR/README.md"
 MOBILE_BUILD="$ROOT_DIR/mobile/build.gradle"
 WEAR_BUILD="$ROOT_DIR/wear/build.gradle"
 SETTINGS_GRADLE="$ROOT_DIR/settings.gradle"
@@ -32,6 +33,7 @@ WEAR_MESSAGE_TEST="$ROOT_DIR/wear/src/test/java/garethpaul/com/wearer/WearMessag
 CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 CODEOWNERS="$ROOT_DIR/.github/CODEOWNERS"
 SEND_TIMEOUT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-mobile-send-timeouts.md"
+HISTORY_LIMIT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-message-history-limit.md"
 
 require_sha256() {
   file=$1
@@ -613,7 +615,35 @@ for message_file in "$MOBILE_MESSAGE" "$WEAR_MESSAGE"; do
     printf '%s\n' "WearMessage must enforce the shared text payload bound." >&2
     exit 1
   fi
+  if ! grep -Eq '^[[:space:]]*static final int MAX_HISTORY_ENTRIES = 100;[[:space:]]*$' "$message_file" || \
+     ! grep -Fq "static boolean shouldRemoveOldestHistoryEntry(int currentEntryCount)" "$message_file" || \
+     ! grep -Fq "return currentEntryCount >= MAX_HISTORY_ENTRIES;" "$message_file"; then
+    printf '%s\n' "WearMessage must enforce the shared visible history bound." >&2
+    exit 1
+  fi
 done
+
+for activity_file in "$MOBILE_ACTIVITY" "$WEAR_ACTIVITY"; do
+  if ! grep -Fq "while (WearMessage.shouldRemoveOldestHistoryEntry(mAdapter.getCount()))" "$activity_file" || \
+     ! grep -Fq "mAdapter.remove(mAdapter.getItem(0));" "$activity_file"; then
+    printf '%s\n' "Activities must evict oldest messages before appending at the history limit." >&2
+    exit 1
+  fi
+done
+
+if [ ! -f "$HISTORY_LIMIT_PLAN" ] || \
+   ! grep -Fq "Status: Completed" "$HISTORY_LIMIT_PLAN" || \
+   ! grep -Fq "make check" "$HISTORY_LIMIT_PLAN" || \
+   ! grep -Fq "external working directory" "$HISTORY_LIMIT_PLAN"; then
+  printf '%s\n' "Wear message history limit plan must record completed verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "visible message histories retain only the newest 100 entries" "$README_FILE" || \
+   ! grep -Fq "2026-06-12-wear-message-history-limit.md" "$README_FILE"; then
+  printf '%s\n' "README must document the visible message history bound and plan." >&2
+  exit 1
+fi
 
 if ! grep -Fq "static boolean isValidPayload(byte[] data)" "$WEAR_MESSAGE"; then
   printf '%s\n' "WearMessage must validate incoming Wear payload bytes." >&2
@@ -651,6 +681,12 @@ for test_file in "$MOBILE_MESSAGE_TEST" "$WEAR_MESSAGE_TEST"; do
   fi
   if ! grep -Fq "acceptsOnlyBoundedNonBlankMessages" "$test_file"; then
     printf '%s\n' "WearMessage tests must cover UTF-8 message boundaries." >&2
+    exit 1
+  fi
+  if ! grep -Fq "removesOldestEntryAtHistoryLimit" "$test_file" || \
+     ! grep -Fq "WearMessage.MAX_HISTORY_ENTRIES - 1" "$test_file" || \
+     ! grep -Fq "WearMessage.MAX_HISTORY_ENTRIES + 1" "$test_file"; then
+    printf '%s\n' "WearMessage tests must cover visible history boundaries." >&2
     exit 1
   fi
 done

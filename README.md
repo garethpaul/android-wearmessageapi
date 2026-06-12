@@ -113,6 +113,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - The exported launcher discards external extras before opening the private
   message activity, which revalidates service-delivered message text.
 - Mobile and wear payloads are limited to 4096 UTF-8 bytes.
+- Mobile and wear visible message histories retain only the newest 100 entries.
 - The mobile sender records messages only after a paired node accepts them and
   shows generic feedback when no send succeeds.
 - The mobile sender preserves edits made while a send is in flight by clearing
@@ -157,6 +158,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   history and matching-input cleanup contract.
 - See `docs/plans/2026-06-12-wear-mobile-send-timeouts.md` for bounded node
   lookup and per-node delivery waits.
+- See `docs/plans/2026-06-12-wear-message-history-limit.md` for the visible
+  message history bound.
 
 ## Contributing
 

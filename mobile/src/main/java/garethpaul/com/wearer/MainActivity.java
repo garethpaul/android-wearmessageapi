@@ -181,6 +181,9 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
                 }
 
                 if (mAdapter != null) {
+                    while (WearMessage.shouldRemoveOldestHistoryEntry(mAdapter.getCount())) {
+                        mAdapter.remove(mAdapter.getItem(0));
+                    }
                     mAdapter.add(sentText);
                     mAdapter.notifyDataSetChanged();
                 }

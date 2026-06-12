@@ -71,4 +71,14 @@ public class WearMessageTest {
         assertFalse(WearMessage.shouldClearInput(null, "hello"));
         assertFalse(WearMessage.shouldClearInput("", ""));
     }
+
+    @Test
+    public void removesOldestEntryAtHistoryLimit() {
+        assertFalse(WearMessage.shouldRemoveOldestHistoryEntry(
+                WearMessage.MAX_HISTORY_ENTRIES - 1));
+        assertTrue(WearMessage.shouldRemoveOldestHistoryEntry(
+                WearMessage.MAX_HISTORY_ENTRIES));
+        assertTrue(WearMessage.shouldRemoveOldestHistoryEntry(
+                WearMessage.MAX_HISTORY_ENTRIES + 1));
+    }
 }

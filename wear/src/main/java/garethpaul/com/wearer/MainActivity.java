@@ -63,6 +63,9 @@ public class MainActivity extends Activity {
             return;
         }
 
+        while (WearMessage.shouldRemoveOldestHistoryEntry(mAdapter.getCount())) {
+            mAdapter.remove(mAdapter.getItem(0));
+        }
         mAdapter.add(text);
         mAdapter.notifyDataSetChanged();
     }
