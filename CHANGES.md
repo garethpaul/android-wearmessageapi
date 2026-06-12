@@ -1,5 +1,10 @@
 # Android Wear Message API Changes
 
+## 2026-06-12
+
+- Bounded connected-node lookup and per-node message delivery waits so stalled
+  Wear transport operations cannot retain sender threads indefinitely.
+
 ## 2026-06-10
 
 - Serialized mobile sends through an explicit pending state, disabled repeated

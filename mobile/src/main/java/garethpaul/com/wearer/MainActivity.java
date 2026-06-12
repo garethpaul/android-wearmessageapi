@@ -18,9 +18,13 @@ import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 
+import java.util.concurrent.TimeUnit;
+
 
 public class MainActivity extends Activity implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener {
+
+    private static final long MESSAGE_OPERATION_TIMEOUT_SECONDS = 5L;
 
     private GoogleApiClient mApiClient;
 
@@ -124,7 +128,7 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
 
                     NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi
                             .getConnectedNodes(apiClient)
-                            .await();
+                            .await(MESSAGE_OPERATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
                     if (nodes == null || nodes.getNodes() == null) {
                         return;
                     }
@@ -138,7 +142,9 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
                                 apiClient,
                                 node.getId(),
                                 path,
-                                WearMessage.encode(text)).await();
+                                WearMessage.encode(text)).await(
+                                MESSAGE_OPERATION_TIMEOUT_SECONDS,
+                                TimeUnit.SECONDS);
                         if (result != null && result.getStatus() != null
                                 && result.getStatus().isSuccess()) {
                             messageSent = true;
