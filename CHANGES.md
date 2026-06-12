@@ -1,5 +1,22 @@
 # Android Wear Message API Changes
 
+## 2026-06-12
+
+- Routed `/message` events through the Wear listener service so cold-start
+  delivery no longer depends on activity listener registration timing.
+- Reused a single Wear activity instance for service-delivered messages and
+  bounded outgoing and incoming payloads to 4096 UTF-8 bytes.
+- Added matching mobile and wear unit coverage for blank, null, valid, and
+  oversized message payloads.
+- Disabled persisted checkout credentials, added repository-wide ownership,
+  and enforced focused immutable-action and read-only workflow contracts.
+- Upgraded hosted verification from SDK-free skips to pinned Java 8 and Android
+  API 21 lint, unit tests, and debug assembly for both modules.
+- Added a checksum-verifying Gradle launcher and rejected alternate manifests,
+  packaged binaries, symlinks, hidden Gradle inputs, and `buildSrc`.
+- Split the exported launcher from the private message activity so external
+  intents cannot inject unbounded or spoofed message extras.
+
 ## 2026-06-10
 
 - Serialized mobile sends through an explicit pending state, disabled repeated

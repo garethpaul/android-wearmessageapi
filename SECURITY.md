@@ -32,6 +32,19 @@ Helpful reports include:
 - Pinned, read-only GitHub Actions runs the guarded `make check` baseline;
   review workflow, Gradle, and checker changes as part of the supply-chain
   surface.
+- Wear message payloads are bounded to 4096 bytes, and the listener service
+  owns delivery so messages do not depend on activity registration timing.
+- Hosted checkout credentials are not persisted. Repository-wide CODEOWNERS
+  and focused baseline checks cover CI, Gradle, wrapper, and module boundaries;
+  repository rules should require owner approval and `Check / check`.
+- Alternate manifests, packaged binaries, symlinks, hidden Gradle inputs, and
+  `buildSrc` are rejected without freezing ordinary source and test edits.
+- Hosted CI provisions pinned Java 8 and Android API 21 tooling and requires
+  Gradle lint, unit tests, and debug assembly instead of accepting SDK skips.
+- The Make targets download Gradle 2.2.1 from the official service and verify
+  its published SHA-256 checksum before running any build logic.
+- The exported Wear launcher strips external extras before opening the private
+  message activity, which validates the bounded service payload again.
 
 ## Mobile Privacy Notes
 

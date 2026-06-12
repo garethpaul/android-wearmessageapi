@@ -17,13 +17,20 @@ payload, send-result, and lifecycle guards run before review.
 - Added `.github/workflows/check.yml` to run `make check` on pushes, pull
   requests, and manual dispatches.
 - Pinned checkout to an immutable revision, limited permissions to repository
-  reads, and bounded the job to five minutes.
-- Reused the guarded Makefile targets so hosted runners still execute the
-  SDK-free baseline when the legacy Android SDK is unavailable.
-- Removed the maintainer-specific default SDK path and cleared ambient hosted
-  SDK variables so CI cannot accidentally invoke the unsupported Gradle path.
+  reads, disabled persisted checkout credentials, and bounded the job to fifteen
+  minutes.
+- Added immutable Java 8 and Android SDK setup actions and installed API 21
+  with build-tools 24.0.3.
+- Reused the guarded Makefile targets so hosted runners execute the SDK-free
+  baseline plus Gradle lint, unit tests, and debug assembly for both modules.
+- Removed the maintainer-specific default SDK path; local Gradle checks still
+  require explicit SDK configuration.
 - Extended `scripts/check-baseline.sh` to require the CI workflow and this
   completed maintenance plan.
+- Added focused workflow checks for immutable actions, read-only permissions,
+  credential isolation, required Android packages, and the full Make gate.
+- Added repository-wide owner coverage, rejected hidden workflows and build
+  inputs, and checksum-verified the Gradle distribution used by Make.
 - Updated README, VISION, SECURITY, and CHANGES with the CI baseline.
 
 ## Verification
@@ -33,5 +40,5 @@ payload, send-result, and lifecycle guards run before review.
 
 ## Follow-Up Candidates
 
-- Add Android SDK-backed CI after migrating and pinning the legacy Gradle,
-  Android plugin, Google Play Services, SDK, and build-tools baseline.
+- Modernize the legacy Gradle, Android plugin, Google Play Services, SDK, and
+  build-tools baseline while retaining SDK-backed CI.

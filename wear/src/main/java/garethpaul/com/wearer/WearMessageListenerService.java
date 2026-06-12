@@ -19,12 +19,24 @@ public class WearMessageListenerService extends WearableListenerService {
         }
 
         if( WearMessage.isStartActivityPath(messageEvent.getPath()) ) {
-            Intent intent = new Intent( this, MainActivity.class );
-            intent.addFlags( Intent.FLAG_ACTIVITY_NEW_TASK );
-            startActivity( intent );
+            startWearActivity(null);
+        } else if (WearMessage.isWearMessagePath(messageEvent.getPath())
+                && WearMessage.isValidPayload(messageEvent.getData())) {
+            startWearActivity(WearMessage.decode(messageEvent.getData()));
         } else {
             super.onMessageReceived(messageEvent);
         }
+    }
+
+    private void startWearActivity(String message) {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        if (message != null) {
+            intent.putExtra(WearMessage.EXTRA_MESSAGE, message);
+        }
+        startActivity(intent);
     }
 
 }

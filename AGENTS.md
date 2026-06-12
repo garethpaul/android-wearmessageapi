@@ -10,31 +10,31 @@
 - `scripts` - baseline checks and helper scripts
 - `docs` - plans, notes, and generated README assets
 - `build.gradle` - Gradle build configuration
-- `gradlew` - checked-in Gradle wrapper
-- `gradle` - repository source or sample assets
-- `mobile` - repository source or sample assets
-- `wear` - repository source or sample assets
+- `scripts/verified-gradle.sh` - checksum-verifying Gradle launcher used by Make
+- `gradlew`, `gradle` - legacy wrapper artifacts retained for project history
+- `mobile` - handset application that sends messages and packages `:wear`
+- `wear` - wearable application and listener service that receives messages
 
 ## Development commands
 
 - Install dependencies: no repository-specific install command is documented.
-- Full baseline: `make check`
+- Repository gate: `make check` (SDK-free when neither Android SDK variable is configured)
 - Combined verification: `make verify`
 - Lint/static checks: `make lint`
 - Tests: `make test`
 - Build: `make build`
-- Android unit tests when the SDK is configured: `./gradlew test`
-- Android debug build when the SDK is configured: `./gradlew assembleDebug`
+- Android unit tests when the SDK is configured: `make test`
+- Android debug build when the SDK is configured: `make build`
 - If a command above skips because a platform toolchain is missing, verify on a machine with that SDK before claiming platform behavior is tested.
 
 ## Coding conventions
 
-- Language mix noted in the README: Java (8), shell (1).
-- Use the checked-in Gradle wrapper for Android builds when an SDK is configured.
+- Use the Make targets so builds run through `scripts/verified-gradle.sh`.
 
 ## Testing guidance
 
-- Test-related files detected: `mobile/src/test/`, `wear/src/test/`
+- JVM unit tests: `mobile/src/test/`, `wear/src/test/`
+- Device/emulator instrumentation smoke test: `mobile/src/androidTest/`
 - Start with the narrowest relevant test or Make target, then run `make check` before handing off if the change is not documentation-only.
 - Keep README verification notes in sync when commands, fixtures, or supported toolchains change.
 
@@ -49,10 +49,8 @@
 
 - No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
 - This looks like a legacy Android project or sample. Expect Android SDK, Gradle, and support-library versions to matter.
-- The mobile and wear message helpers use explicit UTF-8 payloads and treat null text or payloads as empty values.
-- The `/start_activity` and `/message` path helpers are null-safe and case-insensitive in both modules.
-- The wear receiver decodes accepted message payloads before UI dispatch and ignores callbacks when the list adapter is unavailable.
-- The wear listener service ignores null message events before checking launch paths.
+- Message path, payload, connection-state, and lifecycle contracts are documented in `README.md` and enforced by `scripts/check-baseline.sh`.
+- The Wear listener service owns `/message` delivery and routes bounded payloads to a single activity instance; do not restore activity-listener timing dependence.
 
 ## Agent workflow
 

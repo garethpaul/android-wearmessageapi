@@ -4,7 +4,7 @@ ANDROID_HOME ?=
 ANDROID_SDK_ROOT ?=
 ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 ANDROID_SDK := $(if $(ANDROID_HOME),$(ANDROID_HOME),$(ANDROID_SDK_ROOT))
-GRADLE ?= $(ROOT)gradlew
+GRADLE ?= $(ROOT)scripts/verified-gradle.sh
 
 lint:
 	$(ROOT)scripts/check-baseline.sh

@@ -83,7 +83,8 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
             @Override
             public void onClick(View view) {
                 String text = WearMessage.normalizeText(mEditText.getText());
-                if (TextUtils.isEmpty(text) || messageSendInProgress || !isWearConnected()) {
+                if (TextUtils.isEmpty(text) || !WearMessage.isValidMessageText(text)
+                        || messageSendInProgress || !isWearConnected()) {
                     return;
                 }
 
