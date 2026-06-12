@@ -45,6 +45,9 @@ Helpful reports include:
   its published SHA-256 checksum before running any build logic.
 - The exported Wear launcher strips external extras before opening the private
   message activity, which validates the bounded service payload again.
+- The Wear listener service is explicitly exported for the single legacy
+  Google Play services `BIND_LISTENER` action required for background data-layer
+  delivery; manifest contracts reject additional listener actions.
 
 ## Mobile Privacy Notes
 

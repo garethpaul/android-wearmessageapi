@@ -103,6 +103,9 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - This looks like a legacy Android project or sample. Expect Android SDK, Gradle, and support-library versions to matter.
 - The mobile and wear message helpers use explicit UTF-8 payloads and treat null
   text or payloads as empty values.
+- The Wear listener service is explicitly exported only for the legacy Google
+  Play services `BIND_LISTENER` action; the launcher remains separate from the
+  private message activity.
 - The `/start_activity` and `/message` path helpers are null-safe and
   case-insensitive in both modules.
 - The wear receiver decodes accepted message payloads before UI dispatch and

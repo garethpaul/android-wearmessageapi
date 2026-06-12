@@ -34,6 +34,7 @@ CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 CODEOWNERS="$ROOT_DIR/.github/CODEOWNERS"
 SEND_TIMEOUT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-mobile-send-timeouts.md"
 HISTORY_LIMIT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-message-history-limit.md"
+LISTENER_EXPORT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-listener-export-contract.md"
 
 require_sha256() {
   file=$1
@@ -292,6 +293,38 @@ launcher_activity_manifest=$(awk '/android:name=".LauncherActivity"/ { capture =
 if ! printf '%s\n' "$main_activity_manifest" | grep -Fq 'android:exported="false"' ||
    ! printf '%s\n' "$launcher_activity_manifest" | grep -Fq 'android:exported="true"'; then
   printf '%s\n' "Wear message UI must be private and its launcher explicitly exported." >&2
+  exit 1
+fi
+
+if [ "$(grep -Fc 'android:name=".WearMessageListenerService"' "$WEAR_MANIFEST")" -ne 1 ]; then
+  printf '%s\n' "Wear manifest must declare exactly one listener service." >&2
+  exit 1
+fi
+wear_listener_manifest=$(awk '/android:name=".WearMessageListenerService"/ { capture = 1 } capture { print } capture && /<\/service>/ { exit }' "$WEAR_MANIFEST")
+if [ "$(printf '%s\n' "$wear_listener_manifest" | grep -Fc 'android:exported="true"')" -ne 1 ]; then
+  printf '%s\n' "Wear listener service must state its required exported policy explicitly." >&2
+  exit 1
+fi
+if [ "$(printf '%s\n' "$wear_listener_manifest" | grep -c '<action ' || true)" -ne 1 ] ||
+   ! printf '%s\n' "$wear_listener_manifest" | grep -Fq '<action android:name="com.google.android.gms.wearable.BIND_LISTENER" />'; then
+  printf '%s\n' "Exported Wear listener must keep exactly the required BIND_LISTENER action." >&2
+  exit 1
+fi
+
+if [ ! -f "$LISTENER_EXPORT_PLAN" ] ||
+   ! grep -Fq "Status: Implementation Complete; Hosted Verification Pending" "$LISTENER_EXPORT_PLAN" ||
+   ! grep -Fq "CodeQL alert 1" "$LISTENER_EXPORT_PLAN" ||
+   ! grep -Fq "fresh external clone" "$LISTENER_EXPORT_PLAN" ||
+   ! grep -Fq "lint with zero issues" "$LISTENER_EXPORT_PLAN" ||
+   ! grep -Fq "All 13 focused service declaration" "$LISTENER_EXPORT_PLAN" ||
+   ! grep -Fq "verification remain pending" "$LISTENER_EXPORT_PLAN"; then
+  printf '%s\n' "Wear listener export plan must truthfully record pending hosted verification." >&2
+  exit 1
+fi
+if ! grep -Fq "explicitly exported only" "$README_FILE" ||
+   ! grep -Fq "single legacy" "$ROOT_DIR/SECURITY.md" ||
+   ! grep -Fq "listener service export policy explicit" "$ROOT_DIR/CHANGES.md"; then
+  printf '%s\n' "Documentation must record the explicit Wear listener trust boundary." >&2
   exit 1
 fi
 

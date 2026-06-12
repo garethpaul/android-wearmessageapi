@@ -1,6 +1,6 @@
 # Wear Listener Export Contract
 
-Status: Planned
+Status: Implementation Complete; Hosted Verification Pending
 
 ## Context
 
@@ -37,6 +37,17 @@ message delivery and making future manifest drift fail closed.
 - Reject focused service export, action, checker, documentation, and plan
   mutations.
 - Pass exact-head pull-request baseline and CodeQL verification.
+
+## Verification Evidence
+
+- SDK-free `make check` passed the manifest and source contracts.
+- SDK-backed `make check` passed mobile and Wear lint with zero issues, all
+  debug and release JVM test variants, and both debug APK assemblies.
+- The complete SDK-backed gate and structured manifest parsing passed from a
+  fresh external clone with the staged patch applied.
+- All 13 focused service declaration, export policy, listener action,
+  documentation, and plan mutations were rejected.
+- Exact-head pull-request baseline and CodeQL verification remain pending.
 
 ## Boundaries
 

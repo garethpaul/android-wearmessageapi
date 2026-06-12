@@ -2,6 +2,8 @@
 
 ## 2026-06-12
 
+- Made the Wear listener service export policy explicit and constrained its
+  manifest filter to the required Google Play services listener action.
 - Routed `/message` events through the Wear listener service so cold-start
   delivery no longer depends on activity listener registration timing.
 - Reused a single Wear activity instance for service-delivered messages and
