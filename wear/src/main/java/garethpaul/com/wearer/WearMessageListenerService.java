@@ -11,6 +11,8 @@ import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.WearableListenerService;
 
 public class WearMessageListenerService extends WearableListenerService {
+    private final WearMessage.RecentMessageIds recentMessageIds =
+            new WearMessage.RecentMessageIds(WearMessage.MAX_RECENT_MESSAGE_IDS);
 
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
@@ -19,10 +21,16 @@ public class WearMessageListenerService extends WearableListenerService {
         }
 
         if( WearMessage.isStartActivityPath(messageEvent.getPath()) ) {
-            startWearActivity(null);
+            if (recentMessageIds.record(
+                    messageEvent.getSourceNodeId(), messageEvent.getRequestId())) {
+                startWearActivity(null);
+            }
         } else if (WearMessage.isWearMessagePath(messageEvent.getPath())
                 && WearMessage.isValidPayload(messageEvent.getData())) {
-            startWearActivity(WearMessage.decode(messageEvent.getData()));
+            if (recentMessageIds.record(
+                    messageEvent.getSourceNodeId(), messageEvent.getRequestId())) {
+                startWearActivity(WearMessage.decode(messageEvent.getData()));
+            }
         } else {
             super.onMessageReceived(messageEvent);
         }

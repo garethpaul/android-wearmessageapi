@@ -90,4 +90,42 @@ public class WearMessageTest {
         assertTrue(WearMessage.shouldRemoveOldestHistoryEntry(
                 WearMessage.MAX_HISTORY_ENTRIES + 1));
     }
+
+    @Test
+    public void rejectsDuplicateMessageIdentity() {
+        WearMessage.RecentMessageIds recentMessageIds =
+                new WearMessage.RecentMessageIds(WearMessage.MAX_RECENT_MESSAGE_IDS);
+
+        assertTrue(recentMessageIds.record("node-a", 7));
+        assertFalse(recentMessageIds.record("node-a", 7));
+    }
+
+    @Test
+    public void distinguishesRequestIdsBySourceNode() {
+        WearMessage.RecentMessageIds recentMessageIds =
+                new WearMessage.RecentMessageIds(WearMessage.MAX_RECENT_MESSAGE_IDS);
+
+        assertTrue(recentMessageIds.record("node-a", 7));
+        assertTrue(recentMessageIds.record("node-b", 7));
+    }
+
+    @Test
+    public void rejectsMissingMessageSourceNode() {
+        WearMessage.RecentMessageIds recentMessageIds =
+                new WearMessage.RecentMessageIds(WearMessage.MAX_RECENT_MESSAGE_IDS);
+
+        assertFalse(recentMessageIds.record(null, 7));
+        assertFalse(recentMessageIds.record("   ", 7));
+    }
+
+    @Test
+    public void evictsOldestMessageIdentityAtLimit() {
+        WearMessage.RecentMessageIds recentMessageIds =
+                new WearMessage.RecentMessageIds(2);
+
+        assertTrue(recentMessageIds.record("node-a", 1));
+        assertTrue(recentMessageIds.record("node-a", 2));
+        assertTrue(recentMessageIds.record("node-a", 3));
+        assertTrue(recentMessageIds.record("node-a", 1));
+    }
 }

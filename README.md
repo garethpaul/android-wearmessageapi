@@ -120,10 +120,13 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - The wear listener service owns both startup and message delivery, routes
   accepted messages through a single activity instance, and ignores null,
   empty, or oversized payloads.
+- The wear listener rejects missing source-node IDs and suppresses duplicate
+  source/request identities with a bounded 100-entry in-process cache.
 - The exported launcher discards external extras before opening the private
   message activity, which revalidates service-delivered message text.
 - Mobile and wear payloads are limited to 4096 UTF-8 bytes.
 - Mobile and wear visible message histories retain only the newest 100 entries.
+- Replay suppression resets if the Wear listener service process restarts.
 - The mobile sender records messages only after a paired node accepts them and
   shows generic feedback when no send succeeds.
 - The mobile sender preserves edits made while a send is in flight by clearing
@@ -143,6 +146,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   to Wear APIs.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
+- See `docs/plans/2026-06-13-wear-listener-replay-guard.md` for the bounded
+  listener replay contract.
 - See `CHANGES.md` for the maintenance history.
 - See `docs/plans/2026-06-09-wear-message-receiver-lifecycle.md` for the wear
   receiver lifecycle guard.

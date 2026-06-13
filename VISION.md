@@ -22,6 +22,7 @@ Priority:
 - Keep message path matching null-safe and case-insensitive across modules
 - Keep wear UI message rendering tolerant of late or malformed callbacks
 - Keep listener-service startup messages null-safe before path inspection
+- Keep recognized listener events guarded against malformed sources and replay
 - Preserve typed messages until at least one paired node accepts the send
 - Record outgoing history only after at least one paired node accepts the send
 - Preserve newer input edits when an earlier asynchronous send completes
