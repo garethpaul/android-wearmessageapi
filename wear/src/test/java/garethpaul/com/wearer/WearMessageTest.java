@@ -6,6 +6,7 @@ import java.nio.charset.Charset;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class WearMessageTest {
@@ -69,6 +70,20 @@ public class WearMessageTest {
         assertFalse(WearMessage.isValidPayload(new byte[] { (byte) 0xe2, (byte) 0x82 }));
         assertFalse(WearMessage.isValidPayload(new byte[] { (byte) 0x80 }));
         assertFalse(WearMessage.isValidPayload(new byte[WearMessage.MAX_MESSAGE_BYTES + 1]));
+    }
+
+    @Test
+    public void decodesOnlyBoundedStrictUtf8Payloads() {
+        assertEquals("hello", WearMessage.decodeValidPayload("hello".getBytes(UTF_8)));
+        assertEquals(WearMessage.MAX_MESSAGE_BYTES,
+                WearMessage.decodeValidPayload(
+                        new byte[WearMessage.MAX_MESSAGE_BYTES]).length());
+        assertNull(WearMessage.decodeValidPayload(null));
+        assertNull(WearMessage.decodeValidPayload(new byte[0]));
+        assertNull(WearMessage.decodeValidPayload(
+                new byte[] { (byte) 0xe2, (byte) 0x82 }));
+        assertNull(WearMessage.decodeValidPayload(
+                new byte[WearMessage.MAX_MESSAGE_BYTES + 1]));
     }
 
     private static String repeat(char value, int count) {

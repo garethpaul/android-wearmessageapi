@@ -47,18 +47,22 @@ final class WearMessage {
     }
 
     static boolean isValidPayload(byte[] data) {
+        return decodeValidPayload(data) != null;
+    }
+
+    static String decodeValidPayload(byte[] data) {
         if (data == null || data.length == 0 || data.length > MAX_MESSAGE_BYTES) {
-            return false;
+            return null;
         }
 
         try {
-            MESSAGE_CHARSET.newDecoder()
+            return MESSAGE_CHARSET.newDecoder()
                     .onMalformedInput(CodingErrorAction.REPORT)
                     .onUnmappableCharacter(CodingErrorAction.REPORT)
-                    .decode(ByteBuffer.wrap(data));
-            return true;
+                    .decode(ByteBuffer.wrap(data))
+                    .toString();
         } catch (CharacterCodingException exception) {
-            return false;
+            return null;
         }
     }
 

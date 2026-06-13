@@ -53,6 +53,8 @@
 - The Wear listener service owns `/message` delivery and routes bounded payloads to a single activity instance; do not restore activity-listener timing dependence.
 - Validate strict UTF-8 Wear payloads before replay-state mutation or activity
   delivery; malformed bytes must not be replacement-decoded and displayed.
+- Preserve the listener's single-pass strict payload decode over one captured
+  byte array before replay tracking or activity delivery.
 - Keep connected-node lookup and every per-node message send bounded by the shared five-second timeout; do not restore unbounded `PendingResult.await()` calls.
 
 ## Agent workflow

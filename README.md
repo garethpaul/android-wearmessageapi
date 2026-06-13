@@ -117,6 +117,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   case-insensitive in both modules.
 - The wear receiver decodes accepted message payloads before UI dispatch and
   ignores callbacks when the list adapter is unavailable.
+- The listener uses a single-pass strict payload decode over one captured byte
+  array, binding validation and UI delivery to the same transport bytes.
 - The wear listener service owns both startup and message delivery, routes
   accepted messages through a single activity instance, and ignores null,
   empty, or oversized payloads.

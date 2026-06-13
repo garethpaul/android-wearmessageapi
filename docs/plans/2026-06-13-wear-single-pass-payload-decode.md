@@ -1,6 +1,6 @@
 # Decode Wear Payloads Once
 
-Status: Planned
+Status: Completed
 
 ## Context
 
@@ -60,14 +60,29 @@ documentation, and completed verification evidence.
 
 ## Verification
 
-- Focused SDK-backed mobile and Wear JVM tests.
-- Canonical and external-working-directory SDK-backed `make check`.
-- Hostile mutations for duplicate payload fetch, permissive decode delivery,
-  predicate-only validation, invalid-result delivery, helper drift between
-  modules, malformed/exact-limit test removal, and stale plan evidence.
+Verification: Completed
+
+- Focused SDK-backed mobile and Wear debug/release JVM tests pass.
+- Canonical and external-working-directory SDK-backed `make check` pass both
+  modules' lint, JVM tests, debug APK assembly, and baseline contracts.
+- Nine focused hostile mutations cover duplicate payload fetch, permissive
+  decode delivery, predicate-only validation, invalid-result delivery, helper
+  drift between modules, strict-decode test removal, exact-limit test removal,
+  stale plan status, and missing mutation evidence. Every mutation is rejected.
 - Shell syntax, `git diff --check`, generated-artifact inspection, and
-  credential-shaped added-line scanning.
-- Exact-head hosted checks and code-scanning snapshot after push.
+  credential-shaped added-line scanning are part of the pre-push audit.
+- Exact-head hosted checks and code-scanning state are recorded after push.
+
+## Work Completed
+
+- Added a strict decode-result helper in both modules and retained the existing
+  validity predicate as a delegate to the same operation.
+- Captured Wear event payload bytes once and delivered only the text returned
+  from that strict bounded decode.
+- Preserved invalid-event fallback, replay suppression, paths, limits, flags,
+  and activity delivery behavior.
+- Added matching null, empty, malformed, oversized, valid, and exact-limit
+  decode-result tests to both modules.
 
 ## Scope Boundaries
 
