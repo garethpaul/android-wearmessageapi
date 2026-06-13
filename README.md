@@ -120,6 +120,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - The wear listener service owns both startup and message delivery, routes
   accepted messages through a single activity instance, and ignores null,
   empty, or oversized payloads.
+- Strict UTF-8 Wear payloads are required before replay-state mutation or UI
+  delivery, so malformed byte sequences are rejected instead of replaced.
 - The wear listener rejects missing source-node IDs and suppresses duplicate
   source/request identities with a bounded 100-entry in-process cache.
 - The exported launcher discards external extras before opening the private

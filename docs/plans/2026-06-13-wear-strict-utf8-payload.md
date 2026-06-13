@@ -1,13 +1,13 @@
 ---
 title: Wear Strict UTF-8 Payload Validation
 type: security
-status: planned
+status: completed
 date: 2026-06-13
 ---
 
 # Wear Strict UTF-8 Payload Validation
 
-## Status: Planned
+## Status: Completed
 
 ## Priority
 
@@ -100,7 +100,20 @@ or UI delivery, and record exact verification evidence.
 
 ## Verification
 
-Pending implementation and execution.
+- Focused SDK-backed `:mobile:test :wear:test` passed for both debug and release
+  JVM variants.
+- SDK-backed `make check` passed in an isolated tracked-file copy with zero
+  mobile or Wear lint findings, both modules' debug/release JVM tests, and both
+  debug APK assemblies.
+- Ten hostile mutations were rejected: `REPLACE`, `IGNORE`, missing malformed
+  or unmappable actions, a weakened size bound, missing truncated/continuation/
+  valid-multibyte tests, deleted documentation, and reverted plan completion.
+  The first mutation pass exposed and fixed a substring weakness in the exact
+  size-bound checker before final validation.
+- SDK-backed `make check` then passed from the canonical worktree and through
+  `make -C` from an external working directory.
+- Live paired-device transport was not exercised; strict decoder behavior and
+  listener ordering are covered by JVM tests and fail-closed source contracts.
 
 ## Sources
 

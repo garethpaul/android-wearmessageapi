@@ -1,6 +1,9 @@
 package garethpaul.com.wearer;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 
@@ -44,7 +47,19 @@ final class WearMessage {
     }
 
     static boolean isValidPayload(byte[] data) {
-        return data != null && data.length > 0 && data.length <= MAX_MESSAGE_BYTES;
+        if (data == null || data.length == 0 || data.length > MAX_MESSAGE_BYTES) {
+            return false;
+        }
+
+        try {
+            MESSAGE_CHARSET.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(data));
+            return true;
+        } catch (CharacterCodingException exception) {
+            return false;
+        }
     }
 
     static boolean shouldClearInput(CharSequence currentText, String sentText) {

@@ -2,11 +2,14 @@ package garethpaul.com.wearer;
 
 import org.junit.Test;
 
+import java.nio.charset.Charset;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class WearMessageTest {
+    private static final Charset UTF_8 = Charset.forName("UTF-8");
 
     @Test
     public void recognizesStartActivityPathCaseInsensitively() {
@@ -54,6 +57,18 @@ public class WearMessageTest {
         assertFalse(WearMessage.isValidMessageText("   "));
         assertFalse(WearMessage.isValidMessageText(repeat('x', WearMessage.MAX_MESSAGE_BYTES + 1)));
         assertFalse(WearMessage.isValidMessageText(repeat('\u00e9', WearMessage.MAX_MESSAGE_BYTES / 2 + 1)));
+    }
+
+    @Test
+    public void acceptsOnlyBoundedStrictUtf8Payloads() {
+        assertTrue(WearMessage.isValidPayload(new byte[] { 1 }));
+        assertTrue(WearMessage.isValidPayload("\u2603".getBytes(UTF_8)));
+        assertTrue(WearMessage.isValidPayload(new byte[WearMessage.MAX_MESSAGE_BYTES]));
+        assertFalse(WearMessage.isValidPayload(null));
+        assertFalse(WearMessage.isValidPayload(new byte[0]));
+        assertFalse(WearMessage.isValidPayload(new byte[] { (byte) 0xe2, (byte) 0x82 }));
+        assertFalse(WearMessage.isValidPayload(new byte[] { (byte) 0x80 }));
+        assertFalse(WearMessage.isValidPayload(new byte[WearMessage.MAX_MESSAGE_BYTES + 1]));
     }
 
     private static String repeat(char value, int count) {

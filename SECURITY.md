@@ -34,6 +34,8 @@ Helpful reports include:
   surface.
 - Wear message payloads are bounded to 4096 bytes, and the listener service
   owns delivery so messages do not depend on activity registration timing.
+- Strict UTF-8 Wear payloads are required before replay-state mutation or
+  activity launch; malformed transport bytes are not replacement-decoded.
 - Hosted checkout credentials are not persisted. Repository-wide CODEOWNERS
   and focused baseline checks cover CI, Gradle, wrapper, and module boundaries;
   repository rules should require owner approval and `Check / check`.
