@@ -24,6 +24,7 @@ Priority:
 - Keep listener-service startup messages null-safe before path inspection
 - Keep recognized listener events guarded against malformed sources and replay
 - Require strict UTF-8 Wear payloads before replay state or UI delivery
+- Keep single-pass strict payload decode coupled to the exact delivered bytes
 - Preserve typed messages until at least one paired node accepts the send
 - Record outgoing history only after at least one paired node accepts the send
 - Preserve newer input edits when an earlier asynchronous send completes

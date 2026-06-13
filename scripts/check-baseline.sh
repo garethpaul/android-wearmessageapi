@@ -41,6 +41,7 @@ LISTENER_EXPORT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-listener-export-contr
 WRAPPER_PLAN="$ROOT_DIR/docs/plans/2026-06-12-gradle-wrapper-verification.md"
 LISTENER_REPLAY_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-listener-replay-guard.md"
 STRICT_UTF8_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-strict-utf8-payload.md"
+SINGLE_PASS_PAYLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-single-pass-payload-decode.md"
 
 require_sha256() {
   file=$1
@@ -610,8 +611,11 @@ fi
 
 for delivery_contract in \
   "WearMessage.isWearMessagePath(messageEvent.getPath())" \
-  "WearMessage.isValidPayload(messageEvent.getData())" \
-  "startWearActivity(WearMessage.decode(messageEvent.getData()))" \
+  "byte[] payload = messageEvent.getData();" \
+  "String message = WearMessage.decodeValidPayload(payload);" \
+  "if (message != null && recentMessageIds.record(" \
+  "startWearActivity(message);" \
+  "else if (message == null)" \
   "Intent.FLAG_ACTIVITY_CLEAR_TOP" \
   "Intent.FLAG_ACTIVITY_SINGLE_TOP" \
   "intent.putExtra(WearMessage.EXTRA_MESSAGE, message)"; do
@@ -620,6 +624,13 @@ for delivery_contract in \
     exit 1
   fi
 done
+if [ "$(grep -Fc "messageEvent.getData()" "$WEAR_SERVICE")" -ne 1 ] || \
+   [ "$(grep -Fc "WearMessage.decodeValidPayload(" "$WEAR_SERVICE")" -ne 1 ] || \
+   grep -Fq "WearMessage.decode(messageEvent.getData())" "$WEAR_SERVICE" || \
+   grep -Fq "WearMessage.isValidPayload(messageEvent.getData())" "$WEAR_SERVICE"; then
+  printf '%s\n' "Wear listener must fetch and strictly decode each message payload exactly once." >&2
+  exit 1
+fi
 
 for activity_contract in \
   "protected void onNewIntent(Intent intent)" \
@@ -710,10 +721,13 @@ for message_file in "$MOBILE_MESSAGE" "$WEAR_MESSAGE"; do
   fi
   for strict_utf8_contract in \
     "static boolean isValidPayload(byte[] data)" \
+    "return decodeValidPayload(data) != null;" \
+    "static String decodeValidPayload(byte[] data)" \
     "MESSAGE_CHARSET.newDecoder()" \
     ".onMalformedInput(CodingErrorAction.REPORT)" \
     ".onUnmappableCharacter(CodingErrorAction.REPORT)" \
     ".decode(ByteBuffer.wrap(data))" \
+    ".toString();" \
     "catch (CharacterCodingException exception)"; do
     if ! grep -Fq "$strict_utf8_contract" "$message_file"; then
       printf '%s\n' "WearMessage must reject malformed UTF-8 payloads: $strict_utf8_contract" >&2
@@ -733,6 +747,50 @@ for message_file in "$MOBILE_MESSAGE" "$WEAR_MESSAGE"; do
      ! grep -Fq "static boolean shouldRemoveOldestHistoryEntry(int currentEntryCount)" "$message_file" || \
      ! grep -Fq "return currentEntryCount >= MAX_HISTORY_ENTRIES;" "$message_file"; then
     printf '%s\n' "WearMessage must enforce the shared visible history bound." >&2
+    exit 1
+  fi
+done
+
+mobile_strict_payload=$(sed -n \
+  '/static boolean isValidPayload(byte\[\] data)/,/static boolean shouldClearInput/p' \
+  "$MOBILE_MESSAGE")
+wear_strict_payload=$(sed -n \
+  '/static boolean isValidPayload(byte\[\] data)/,/static boolean shouldClearInput/p' \
+  "$WEAR_MESSAGE")
+if [ "$mobile_strict_payload" != "$wear_strict_payload" ]; then
+  printf '%s\n' "Mobile and Wear strict payload helper implementations must remain aligned." >&2
+  exit 1
+fi
+
+for strict_decode_test in "$MOBILE_MESSAGE_TEST" "$WEAR_MESSAGE_TEST"; do
+  for strict_decode_contract in \
+    "public void decodesOnlyBoundedStrictUtf8Payloads()" \
+    'assertEquals("hello", WearMessage.decodeValidPayload("hello".getBytes(UTF_8)))' \
+    "new byte[WearMessage.MAX_MESSAGE_BYTES]).length()" \
+    "assertNull(WearMessage.decodeValidPayload(null))" \
+    "new byte[] { (byte) 0xe2, (byte) 0x82 }" \
+    "new byte[WearMessage.MAX_MESSAGE_BYTES + 1]"; do
+    if ! grep -Fq "$strict_decode_contract" "$strict_decode_test"; then
+      printf '%s\n' "Strict payload decode regression test is missing: $strict_decode_contract" >&2
+      exit 1
+    fi
+  done
+done
+
+if [ ! -f "$SINGLE_PASS_PAYLOAD_PLAN" ] || \
+   ! grep -Fq "Status: Completed" "$SINGLE_PASS_PAYLOAD_PLAN" || \
+   ! grep -Fq "Verification: Completed" "$SINGLE_PASS_PAYLOAD_PLAN" || \
+   ! grep -Fq "Nine focused hostile mutations" "$SINGLE_PASS_PAYLOAD_PLAN" || \
+   ! grep -Fq "make check" "$SINGLE_PASS_PAYLOAD_PLAN"; then
+  printf '%s\n' "Single-pass Wear payload plan must record completed verification." >&2
+  exit 1
+fi
+
+for single_pass_doc in "$ROOT_DIR/AGENTS.md" "$README_FILE" "$SECURITY_FILE" \
+  "$VISION_FILE" "$CHANGES_FILE"; do
+  if ! tr '\n' ' ' < "$single_pass_doc" | tr -s '[:space:]' ' ' | \
+      grep -Fiq "single-pass strict payload decode"; then
+    printf '%s\n' "$single_pass_doc must document single-pass strict payload decode." >&2
     exit 1
   fi
 done

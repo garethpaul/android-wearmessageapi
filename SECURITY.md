@@ -36,6 +36,8 @@ Helpful reports include:
   owns delivery so messages do not depend on activity registration timing.
 - Strict UTF-8 Wear payloads are required before replay-state mutation or
   activity launch; malformed transport bytes are not replacement-decoded.
+- A single-pass strict payload decode binds validation and delivered text to
+  one captured payload array before replay tracking or activity launch.
 - Hosted checkout credentials are not persisted. Repository-wide CODEOWNERS
   and focused baseline checks cover CI, Gradle, wrapper, and module boundaries;
   repository rules should require owner approval and `Check / check`.

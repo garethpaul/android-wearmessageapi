@@ -25,11 +25,14 @@ public class WearMessageListenerService extends WearableListenerService {
                     messageEvent.getSourceNodeId(), messageEvent.getRequestId())) {
                 startWearActivity(null);
             }
-        } else if (WearMessage.isWearMessagePath(messageEvent.getPath())
-                && WearMessage.isValidPayload(messageEvent.getData())) {
-            if (recentMessageIds.record(
+        } else if (WearMessage.isWearMessagePath(messageEvent.getPath())) {
+            byte[] payload = messageEvent.getData();
+            String message = WearMessage.decodeValidPayload(payload);
+            if (message != null && recentMessageIds.record(
                     messageEvent.getSourceNodeId(), messageEvent.getRequestId())) {
-                startWearActivity(WearMessage.decode(messageEvent.getData()));
+                startWearActivity(message);
+            } else if (message == null) {
+                super.onMessageReceived(messageEvent);
             }
         } else {
             super.onMessageReceived(messageEvent);

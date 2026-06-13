@@ -2,6 +2,8 @@
 
 ## 2026-06-13
 
+- Coupled Wear payload validation and delivered text through a single-pass
+  strict payload decode over one captured byte array.
 - Rejected malformed strict UTF-8 Wear payloads before replay-state mutation
   and private activity delivery.
 - Added a bounded in-process listener replay cache keyed by source node and
