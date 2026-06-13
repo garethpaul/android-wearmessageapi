@@ -2,6 +2,7 @@
 
 ## 2026-06-13
 
+- Wear listener rejects semantically blank payloads before replay recording or activity launch.
 - Coupled Wear payload validation and delivered text through a single-pass
   strict payload decode over one captured byte array.
 - Rejected malformed strict UTF-8 Wear payloads before replay-state mutation

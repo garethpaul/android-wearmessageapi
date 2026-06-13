@@ -42,6 +42,7 @@ WRAPPER_PLAN="$ROOT_DIR/docs/plans/2026-06-12-gradle-wrapper-verification.md"
 LISTENER_REPLAY_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-listener-replay-guard.md"
 STRICT_UTF8_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-strict-utf8-payload.md"
 SINGLE_PASS_PAYLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-single-pass-payload-decode.md"
+LISTENER_SEMANTIC_PAYLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-listener-semantic-payload.md"
 
 require_sha256() {
   file=$1
@@ -613,9 +614,10 @@ for delivery_contract in \
   "WearMessage.isWearMessagePath(messageEvent.getPath())" \
   "byte[] payload = messageEvent.getData();" \
   "String message = WearMessage.decodeValidPayload(payload);" \
-  "if (message != null && recentMessageIds.record(" \
+  "boolean validMessage = WearMessage.isValidMessageText(message);" \
+  "if (validMessage && recentMessageIds.record(" \
   "startWearActivity(message);" \
-  "else if (message == null)" \
+  "else if (!validMessage)" \
   "Intent.FLAG_ACTIVITY_CLEAR_TOP" \
   "Intent.FLAG_ACTIVITY_SINGLE_TOP" \
   "intent.putExtra(WearMessage.EXTRA_MESSAGE, message)"; do
@@ -629,6 +631,18 @@ if [ "$(grep -Fc "messageEvent.getData()" "$WEAR_SERVICE")" -ne 1 ] || \
    grep -Fq "WearMessage.decode(messageEvent.getData())" "$WEAR_SERVICE" || \
    grep -Fq "WearMessage.isValidPayload(messageEvent.getData())" "$WEAR_SERVICE"; then
   printf '%s\n' "Wear listener must fetch and strictly decode each message payload exactly once." >&2
+  exit 1
+fi
+
+WEAR_SERVICE_COMPACT=$(tr -d '[:space:]' < "$WEAR_SERVICE")
+if ! printf '%s\n' "$WEAR_SERVICE_COMPACT" | grep -Fq \
+    'byte[]payload=messageEvent.getData();Stringmessage=WearMessage.decodeValidPayload(payload);booleanvalidMessage=WearMessage.isValidMessageText(message);if(validMessage&&recentMessageIds.record(messageEvent.getSourceNodeId(),messageEvent.getRequestId())){startWearActivity(message);}elseif(!validMessage){super.onMessageReceived(messageEvent);}'; then
+  printf '%s\n' "Wear listener must validate decoded message semantics before replay recording and activity launch." >&2
+  exit 1
+fi
+
+if [ "$(grep -Fc "WearMessage.isValidMessageText(message)" "$WEAR_SERVICE")" -ne 1 ]; then
+  printf '%s\n' "Wear listener must evaluate decoded message semantics exactly once." >&2
   exit 1
 fi
 
@@ -775,6 +789,26 @@ for strict_decode_test in "$MOBILE_MESSAGE_TEST" "$WEAR_MESSAGE_TEST"; do
       exit 1
     fi
   done
+  if ! grep -Fq 'assertFalse(WearMessage.isValidMessageText("   "))' "$strict_decode_test"; then
+    printf '%s\n' "Both modules must preserve the semantically blank message regression." >&2
+    exit 1
+  fi
+done
+
+if [ ! -f "$LISTENER_SEMANTIC_PAYLOAD_PLAN" ] || \
+   ! grep -Fq "Status: Completed" "$LISTENER_SEMANTIC_PAYLOAD_PLAN" || \
+   ! grep -Fq "make check" "$LISTENER_SEMANTIC_PAYLOAD_PLAN" || \
+   ! grep -Fq "hostile mutations" "$LISTENER_SEMANTIC_PAYLOAD_PLAN"; then
+  printf '%s\n' "Wear listener semantic payload plan must record completed verification." >&2
+  exit 1
+fi
+
+for semantic_payload_doc in "$ROOT_DIR/AGENTS.md" "$README_FILE" "$SECURITY_FILE" \
+    "$VISION_FILE" "$CHANGES_FILE"; do
+  if ! grep -Fq "Wear listener rejects semantically blank payloads before replay recording or activity launch." "$semantic_payload_doc"; then
+    printf '%s\n' "$semantic_payload_doc must document listener semantic payload validation." >&2
+    exit 1
+  fi
 done
 
 if [ ! -f "$SINGLE_PASS_PAYLOAD_PLAN" ] || \

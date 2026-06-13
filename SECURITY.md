@@ -38,6 +38,7 @@ Helpful reports include:
   activity launch; malformed transport bytes are not replacement-decoded.
 - A single-pass strict payload decode binds validation and delivered text to
   one captured payload array before replay tracking or activity launch.
+- Wear listener rejects semantically blank payloads before replay recording or activity launch.
 - Hosted checkout credentials are not persisted. Repository-wide CODEOWNERS
   and focused baseline checks cover CI, Gradle, wrapper, and module boundaries;
   repository rules should require owner approval and `Check / check`.
