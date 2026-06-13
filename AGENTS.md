@@ -55,6 +55,7 @@
   delivery; malformed bytes must not be replacement-decoded and displayed.
 - Preserve the listener's single-pass strict payload decode over one captured
   byte array before replay tracking or activity delivery.
+- Wear listener rejects semantically blank payloads before replay recording or activity launch.
 - Keep connected-node lookup and every per-node message send bounded by the shared five-second timeout; do not restore unbounded `PendingResult.await()` calls.
 
 ## Agent workflow
