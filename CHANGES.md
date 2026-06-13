@@ -1,5 +1,12 @@
 # Android Wear Message API Changes
 
+## 2026-06-13
+
+- Added a bounded in-process listener replay cache keyed by source node and
+  request ID.
+- Rejected missing source-node IDs and duplicate recognized events before watch
+  activity launch.
+
 ## 2026-06-12
 
 - Regenerated the direct Gradle wrapper with official Gradle 8.14.5 tooling,

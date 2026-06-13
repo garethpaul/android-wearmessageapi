@@ -39,6 +39,7 @@ SEND_TIMEOUT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-mobile-send-timeouts.md"
 HISTORY_LIMIT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-message-history-limit.md"
 LISTENER_EXPORT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-listener-export-contract.md"
 WRAPPER_PLAN="$ROOT_DIR/docs/plans/2026-06-12-gradle-wrapper-verification.md"
+LISTENER_REPLAY_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-listener-replay-guard.md"
 
 require_sha256() {
   file=$1
@@ -741,6 +742,28 @@ if ! grep -Fq "static boolean isValidPayload(byte[] data)" "$WEAR_MESSAGE"; then
   exit 1
 fi
 
+for replay_contract in \
+  "static final int MAX_RECENT_MESSAGE_IDS = 100;" \
+  "static final class RecentMessageIds" \
+  "synchronized boolean record(String sourceNodeId, int requestId)" \
+  "private final LinkedHashSet<String> identities" \
+  "if (!identities.add(identity))" \
+  "while (identities.size() > maxEntries)"; do
+  if ! grep -Fq "$replay_contract" "$WEAR_MESSAGE"; then
+    printf '%s\n' "WearMessage must keep the bounded listener replay contract: $replay_contract" >&2
+    exit 1
+  fi
+done
+
+for listener_replay_contract in \
+  "new WearMessage.RecentMessageIds(WearMessage.MAX_RECENT_MESSAGE_IDS)" \
+  "messageEvent.getSourceNodeId(), messageEvent.getRequestId()"; do
+  if ! grep -Fq "$listener_replay_contract" "$WEAR_SERVICE"; then
+    printf '%s\n' "Wear listener must enforce recent source/request identities." >&2
+    exit 1
+  fi
+done
+
 for test_file in "$MOBILE_MESSAGE_TEST" "$WEAR_MESSAGE_TEST"; do
   if ! grep -Fq "recognizesStartActivityPathCaseInsensitively" "$test_file"; then
     printf '%s\n' "WearMessage tests must cover case-insensitive start path matching." >&2
@@ -781,6 +804,32 @@ for test_file in "$MOBILE_MESSAGE_TEST" "$WEAR_MESSAGE_TEST"; do
     exit 1
   fi
 done
+
+for replay_test in \
+  "rejectsDuplicateMessageIdentity" \
+  "distinguishesRequestIdsBySourceNode" \
+  "rejectsMissingMessageSourceNode" \
+  "evictsOldestMessageIdentityAtLimit"; do
+  if ! grep -Fq "$replay_test" "$WEAR_MESSAGE_TEST"; then
+    printf '%s\n' "WearMessage tests must cover listener replay behavior: $replay_test" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq "bounded 100-entry in-process cache" "$README_FILE" || \
+   ! grep -Fq "2026-06-13-wear-listener-replay-guard.md" "$README_FILE"; then
+  printf '%s\n' "README must document the bounded listener replay contract and plan." >&2
+  exit 1
+fi
+
+if [ ! -f "$LISTENER_REPLAY_PLAN" ] || \
+   ! grep -Fq "status: completed" "$LISTENER_REPLAY_PLAN" || \
+   ! grep -Fq "## Status: Completed" "$LISTENER_REPLAY_PLAN" || \
+   ! grep -Fq 'SDK-backed `make check` passed' "$LISTENER_REPLAY_PLAN" || \
+   ! grep -Fq "Ten isolated hostile mutations were rejected" "$LISTENER_REPLAY_PLAN"; then
+  printf '%s\n' "Wear listener replay plan must record completed status and verification." >&2
+  exit 1
+fi
 
 
 for boundary_contract in \

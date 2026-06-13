@@ -1,6 +1,8 @@
 package garethpaul.com.wearer;
 
 import java.nio.charset.Charset;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 
 final class WearMessage {
     static final String START_ACTIVITY = "/start_activity";
@@ -8,6 +10,7 @@ final class WearMessage {
     static final String EXTRA_MESSAGE = "garethpaul.com.wearer.MESSAGE";
     static final int MAX_MESSAGE_BYTES = 4096;
     static final int MAX_HISTORY_ENTRIES = 100;
+    static final int MAX_RECENT_MESSAGE_IDS = 100;
     private static final Charset MESSAGE_CHARSET = Charset.forName("UTF-8");
 
     private WearMessage() {
@@ -60,5 +63,36 @@ final class WearMessage {
 
     static boolean isWearMessagePath(String path) {
         return path != null && WEAR_MESSAGE_PATH.equalsIgnoreCase(path);
+    }
+
+    static final class RecentMessageIds {
+        private final int maxEntries;
+        private final LinkedHashSet<String> identities = new LinkedHashSet<String>();
+
+        RecentMessageIds(int maxEntries) {
+            if (maxEntries <= 0) {
+                throw new IllegalArgumentException("maxEntries must be positive");
+            }
+            this.maxEntries = maxEntries;
+        }
+
+        synchronized boolean record(String sourceNodeId, int requestId) {
+            String normalizedSourceNodeId = normalizeText(sourceNodeId);
+            if (normalizedSourceNodeId.length() == 0) {
+                return false;
+            }
+
+            String identity = normalizedSourceNodeId + "\n" + requestId;
+            if (!identities.add(identity)) {
+                return false;
+            }
+
+            while (identities.size() > maxEntries) {
+                Iterator<String> iterator = identities.iterator();
+                iterator.next();
+                iterator.remove();
+            }
+            return true;
+        }
     }
 }
