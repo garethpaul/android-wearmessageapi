@@ -40,6 +40,7 @@ HISTORY_LIMIT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-message-history-limit.m
 LISTENER_EXPORT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-listener-export-contract.md"
 WRAPPER_PLAN="$ROOT_DIR/docs/plans/2026-06-12-gradle-wrapper-verification.md"
 LISTENER_REPLAY_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-listener-replay-guard.md"
+STRICT_UTF8_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-strict-utf8-payload.md"
 
 require_sha256() {
   file=$1
@@ -707,6 +708,27 @@ for message_file in "$MOBILE_MESSAGE" "$WEAR_MESSAGE"; do
     printf '%s\n' "WearMessage must enforce the shared text payload bound." >&2
     exit 1
   fi
+  for strict_utf8_contract in \
+    "static boolean isValidPayload(byte[] data)" \
+    "MESSAGE_CHARSET.newDecoder()" \
+    ".onMalformedInput(CodingErrorAction.REPORT)" \
+    ".onUnmappableCharacter(CodingErrorAction.REPORT)" \
+    ".decode(ByteBuffer.wrap(data))" \
+    "catch (CharacterCodingException exception)"; do
+    if ! grep -Fq "$strict_utf8_contract" "$message_file"; then
+      printf '%s\n' "WearMessage must reject malformed UTF-8 payloads: $strict_utf8_contract" >&2
+      exit 1
+    fi
+  done
+  if ! grep -Eq '^[[:space:]]*if \(data == null \|\| data\.length == 0 \|\| data\.length > MAX_MESSAGE_BYTES\) \{[[:space:]]*$' \
+      "$message_file"; then
+    printf '%s\n' "WearMessage must preserve the exact nonempty 4096-byte payload bound." >&2
+    exit 1
+  fi
+  if grep -Eq 'CodingErrorAction\.(REPLACE|IGNORE)' "$message_file"; then
+    printf '%s\n' "WearMessage payload validation must report encoding errors." >&2
+    exit 1
+  fi
   if ! grep -Eq '^[[:space:]]*static final int MAX_HISTORY_ENTRIES = 100;[[:space:]]*$' "$message_file" || \
      ! grep -Fq "static boolean shouldRemoveOldestHistoryEntry(int currentEntryCount)" "$message_file" || \
      ! grep -Fq "return currentEntryCount >= MAX_HISTORY_ENTRIES;" "$message_file"; then
@@ -846,16 +868,38 @@ for boundary_contract in \
 done
 
 
-if ! grep -Fq "acceptsOnlyBoundedNonEmptyPayloads" "$WEAR_MESSAGE_TEST"; then
-  printf '%s\n' "Wear tests must cover incoming payload boundaries." >&2
+for payload_test in "$MOBILE_MESSAGE_TEST" "$WEAR_MESSAGE_TEST"; do
+  if ! grep -Fq "acceptsOnlyBoundedStrictUtf8Payloads" "$payload_test"; then
+    printf '%s\n' "WearMessage tests must cover strict incoming UTF-8 payloads." >&2
+    exit 1
+  fi
+  for payload_contract in \
+    '"\u2603".getBytes(UTF_8)' \
+    'new byte[] { (byte) 0xe2, (byte) 0x82 }' \
+    'new byte[] { (byte) 0x80 }' \
+    'new byte[WearMessage.MAX_MESSAGE_BYTES]' \
+    'new byte[WearMessage.MAX_MESSAGE_BYTES + 1]'; do
+    if ! grep -Fq "$payload_contract" "$payload_test"; then
+      printf '%s\n' "Wear payload tests must retain strict UTF-8 assertion: $payload_contract" >&2
+      exit 1
+    fi
+  done
+done
+
+if [ ! -f "$STRICT_UTF8_PLAN" ] || \
+   ! grep -Fq "status: completed" "$STRICT_UTF8_PLAN" || \
+   ! grep -Fq "## Status: Completed" "$STRICT_UTF8_PLAN" || \
+   ! grep -Fq 'SDK-backed `make check` passed' "$STRICT_UTF8_PLAN" || \
+   ! grep -Fq "hostile mutations were rejected" "$STRICT_UTF8_PLAN"; then
+  printf '%s\n' "Strict UTF-8 payload plan must record completed verification." >&2
   exit 1
 fi
 
-for payload_contract in \
-  'new byte[WearMessage.MAX_MESSAGE_BYTES]' \
-  'new byte[WearMessage.MAX_MESSAGE_BYTES + 1]'; do
-  if ! grep -Fq "$payload_contract" "$WEAR_MESSAGE_TEST"; then
-    printf '%s\n' "Wear payload tests must retain exact byte boundary assertion: $payload_contract" >&2
+for strict_utf8_doc in "$ROOT_DIR/AGENTS.md" "$README_FILE" "$SECURITY_FILE" \
+  "$VISION_FILE" "$CHANGES_FILE"; do
+  if ! tr '\n' ' ' < "$strict_utf8_doc" | tr -s '[:space:]' ' ' | \
+      grep -Fiq "strict UTF-8 Wear payloads"; then
+    printf '%s\n' "$strict_utf8_doc must document strict UTF-8 Wear payloads." >&2
     exit 1
   fi
 done

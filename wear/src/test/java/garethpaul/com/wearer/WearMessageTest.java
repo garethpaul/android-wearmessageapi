@@ -2,11 +2,14 @@ package garethpaul.com.wearer;
 
 import org.junit.Test;
 
+import java.nio.charset.Charset;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class WearMessageTest {
+    private static final Charset UTF_8 = Charset.forName("UTF-8");
 
     @Test
     public void recognizesStartActivityPathCaseInsensitively() {
@@ -57,11 +60,14 @@ public class WearMessageTest {
     }
 
     @Test
-    public void acceptsOnlyBoundedNonEmptyPayloads() {
+    public void acceptsOnlyBoundedStrictUtf8Payloads() {
         assertTrue(WearMessage.isValidPayload(new byte[] { 1 }));
+        assertTrue(WearMessage.isValidPayload("\u2603".getBytes(UTF_8)));
         assertTrue(WearMessage.isValidPayload(new byte[WearMessage.MAX_MESSAGE_BYTES]));
         assertFalse(WearMessage.isValidPayload(null));
         assertFalse(WearMessage.isValidPayload(new byte[0]));
+        assertFalse(WearMessage.isValidPayload(new byte[] { (byte) 0xe2, (byte) 0x82 }));
+        assertFalse(WearMessage.isValidPayload(new byte[] { (byte) 0x80 }));
         assertFalse(WearMessage.isValidPayload(new byte[WearMessage.MAX_MESSAGE_BYTES + 1]));
     }
 

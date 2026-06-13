@@ -2,6 +2,8 @@
 
 ## 2026-06-13
 
+- Rejected malformed strict UTF-8 Wear payloads before replay-state mutation
+  and private activity delivery.
 - Added a bounded in-process listener replay cache keyed by source node and
   request ID.
 - Rejected missing source-node IDs and duplicate recognized events before watch
