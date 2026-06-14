@@ -45,6 +45,9 @@ Priority:
   assembly
 - Avoid changing Google Play services dependencies without documenting impact
 - Maintain the two-module project structure
+- Keep exact-commit Wear Message device verification matrix evidence separate
+  from portable checks, with unexecuted mobile, Wear, Data Layer, and UI rows
+  explicit
 
 Next priorities:
 
@@ -52,6 +55,8 @@ Next priorities:
 - Add tests or manual verification notes for message send/receive behavior
 - Update Gradle, SDK levels, and wearable APIs in a dedicated pass
 - Document device or emulator pairing requirements
+- Execute the paired-device verification matrix with synthetic payloads and
+  privacy-safe transport, replay, launch, and lifecycle evidence
 
 Contribution rules:
 

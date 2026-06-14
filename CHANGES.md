@@ -2,6 +2,9 @@
 
 ## 2026-06-14
 
+- Added an exact-commit Wear Message device verification matrix for pairing,
+  canonical paths, strict payload handling, replay, launch-failure retry,
+  disconnects, relaunch, and privacy-safe evidence, with every runtime row explicitly unexecuted.
 - Disabled PNG crunching and AGP 1.1.0's unstable queued implementation in
   both modules while retaining AAPT resource packaging, lint, tests, and
   assembly.

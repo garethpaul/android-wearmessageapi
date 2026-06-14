@@ -49,6 +49,7 @@ CANONICAL_PATH_PLAN="$ROOT_DIR/docs/plans/2026-06-14-canonical-wear-message-path
 LISTENER_LAUNCH_FAILURE_PLAN="$ROOT_DIR/docs/plans/2026-06-14-wear-listener-launch-failure-isolation.md"
 LAUNCH_FAILURE_REPLAY_PLAN="$ROOT_DIR/docs/plans/2026-06-14-wear-launch-failure-replay-rollback.md"
 PNG_CRUNCHER_PLAN="$ROOT_DIR/docs/plans/2026-06-14-legacy-png-cruncher-stability.md"
+DEVICE_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-android-wearmessageapi-device-verification-checklist.md"
 
 require_sha256() {
   file=$1
@@ -327,6 +328,57 @@ if [ ! -f "$PNG_CRUNCHER_PLAN" ] || \
   printf '%s\n' "Legacy PNG cruncher plan must record completed verification evidence." >&2
   exit 1
 fi
+
+for required_device_path in "$ROOT_DIR/DEVICE_VERIFICATION.md" "$DEVICE_VERIFICATION_PLAN"; do
+  if [ ! -f "$required_device_path" ]; then
+    printf '%s\n' "Required Wear Message device verification file is missing: ${required_device_path#"$ROOT_DIR/"}" >&2
+    exit 1
+  fi
+done
+
+for device_contract in \
+  'commit SHA and pull request' \
+  'synthetic payload' \
+  'Paired connection' \
+  'Mobile to Wear message' \
+  'Wear to mobile start' \
+  'Canonical `/message` path' \
+  'Canonical `/start_activity` path' \
+  'Malformed UTF-8' \
+  'Blank semantic payload' \
+  'Duplicate replay' \
+  'Activity-not-found launch' \
+  'Security-rejected launch' \
+  'Redelivery after launch failure' \
+  'Disconnect during send' \
+  'Reconnect and retry' \
+  'Do not convert `not run` into passing evidence.' \
+  'node identifiers, device serials, payload dumps' \
+  'every mobile, Wear, Data Layer, and UI row as unexecuted'; do
+  if ! grep -Fq "$device_contract" "$ROOT_DIR/DEVICE_VERIFICATION.md"; then
+    printf '%s\n' "Wear Message device checklist must keep contract: $device_contract" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq 'DEVICE_VERIFICATION.md' "$README_FILE" || \
+   ! grep -Fq 'explicit unexecuted rows' "$README_FILE" || \
+   ! grep -Fq 'Wear Message device verification matrix' "$VISION_FILE" || \
+   ! grep -Fq 'every runtime row explicitly unexecuted' "$CHANGES_FILE"; then
+  printf '%s\n' 'Repository guidance must document the unexecuted Wear Message device matrix.' >&2
+  exit 1
+fi
+
+for device_plan_contract in \
+  'Status: Completed' \
+  'make check' \
+  'hostile mutations' \
+  'No mobile or Wear emulator, paired device, Wear Data Layer connection, Play services runtime, or live UI scenario was executed'; do
+  if ! grep -Fq "$device_plan_contract" "$DEVICE_VERIFICATION_PLAN"; then
+    printf '%s\n' "Wear Message device plan must keep completion evidence: $device_plan_contract" >&2
+    exit 1
+  fi
+done
 
 if grep -Fq "play-services:+" "$MOBILE_BUILD"; then
   printf '%s\n' "Mobile module must not use dynamic Google Play Services dependencies." >&2

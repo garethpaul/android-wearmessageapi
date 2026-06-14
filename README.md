@@ -98,6 +98,11 @@ when their respective caches are empty.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
+Use [`DEVICE_VERIFICATION.md`](DEVICE_VERIFICATION.md) for the exact-commit
+mobile/Wear matrix. It covers pairing, canonical paths, strict payload handling,
+replay, launch-failure retry, disconnects, relaunch, privacy-safe evidence, and
+explicit unexecuted rows.
+
 ## Configuration and Secrets
 
 - No required secret or credential file was identified in the repository scan. If you add integrations later, keep secrets out of git.
@@ -159,6 +164,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - The mobile and wear activities validate required startup views before connecting
   to Wear APIs.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
+- See `docs/plans/2026-06-14-android-wearmessageapi-device-verification-checklist.md`
+  for the paired-device evidence matrix and runtime non-claims.
 - See `VISION.md` for project direction and contribution guardrails.
 - See `docs/plans/2026-06-13-wear-listener-replay-guard.md` for the bounded
   listener replay contract.
