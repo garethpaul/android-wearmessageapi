@@ -2,6 +2,8 @@
 
 ## 2026-06-14
 
+- Isolated documented Wear activity launch failures from listener message
+  handling.
 - Restricted Wear transport dispatch to exact canonical paths and added
   portable cross-module path tests.
 

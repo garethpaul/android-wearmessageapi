@@ -115,6 +115,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   private message activity.
 - The `/start_activity` and `/message` path helpers are null-safe and require
   exact canonical identifiers in both modules.
+- The Wear listener isolates activity-not-found and security launch failures so
+  delivery policy errors do not terminate later message handling.
 - The wear receiver decodes accepted message payloads before UI dispatch and
   ignores callbacks when the list adapter is unavailable.
 - The listener uses a single-pass strict payload decode over one captured byte
@@ -153,6 +155,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `VISION.md` for project direction and contribution guardrails.
 - See `docs/plans/2026-06-13-wear-listener-replay-guard.md` for the bounded
   listener replay contract.
+- See `docs/plans/2026-06-14-wear-listener-launch-failure-isolation.md` for the
+  activity launch failure boundary.
 - See `CHANGES.md` for the maintenance history.
 - See `docs/plans/2026-06-09-wear-message-receiver-lifecycle.md` for the wear
   receiver lifecycle guard.

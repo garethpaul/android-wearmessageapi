@@ -58,6 +58,8 @@
 - Wear listener rejects semantically blank payloads before replay recording or activity launch.
 - Wear transport paths must match the exact canonical `/start_activity` and
   `/message` identifiers in both modules.
+- Wear listener activity delivery must isolate activity-not-found and security
+  launch failures without broadening accepted transport or payload paths.
 - Keep connected-node lookup and every per-node message send bounded by the shared five-second timeout; do not restore unbounded `PendingResult.await()` calls.
 
 ## Agent workflow

@@ -41,6 +41,8 @@ Helpful reports include:
 - Wear listener rejects semantically blank payloads before replay recording or activity launch.
 - Wear listener dispatch requires exact canonical transport paths; case
   variants and suffix variants are rejected before activity launch.
+- Documented activity launch failures are contained at the Wear listener
+  boundary instead of terminating service message handling.
 - Hosted checkout credentials are not persisted. Repository-wide CODEOWNERS
   and focused baseline checks cover CI, Gradle, wrapper, and module boundaries;
   repository rules should require owner approval and `Check / check`.

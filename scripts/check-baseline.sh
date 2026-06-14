@@ -46,6 +46,7 @@ STRICT_UTF8_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-strict-utf8-payload.md"
 SINGLE_PASS_PAYLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-single-pass-payload-decode.md"
 LISTENER_SEMANTIC_PAYLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-listener-semantic-payload.md"
 CANONICAL_PATH_PLAN="$ROOT_DIR/docs/plans/2026-06-14-canonical-wear-message-paths.md"
+LISTENER_LAUNCH_FAILURE_PLAN="$ROOT_DIR/docs/plans/2026-06-14-wear-listener-launch-failure-isolation.md"
 
 require_sha256() {
   file=$1
@@ -990,6 +991,35 @@ if ! tr '\n' ' ' < "$ROOT_DIR/AGENTS.md" | tr -s '[:space:]' ' ' | grep -Fq 'exa
    ! grep -Fq 'message path matching null-safe and exact across modules' "$VISION_FILE" || \
    ! grep -Fq 'exact canonical paths' "$CHANGES_FILE"; then
   printf '%s\n' "Canonical Wear path documentation is incomplete." >&2
+  exit 1
+fi
+
+listener_launch_contract=$(tr '\n' ' ' < "$WEAR_SERVICE" | tr -s '[:space:]' ' ')
+if ! grep -Fq 'import android.content.ActivityNotFoundException;' "$WEAR_SERVICE" || \
+   ! printf '%s\n' "$listener_launch_contract" | grep -Fq 'try { startActivity(intent); } catch (ActivityNotFoundException ignored) { } catch (SecurityException ignored) { }' || \
+   grep -Fq 'catch (RuntimeException' "$WEAR_SERVICE"; then
+  printf '%s\n' "Wear listener must isolate only documented activity-launch failures." >&2
+  exit 1
+fi
+if [ "$(grep -Fc 'startActivity(intent);' "$WEAR_SERVICE")" -ne 1 ] || \
+   [ "$(grep -Fc 'catch (ActivityNotFoundException ignored)' "$WEAR_SERVICE")" -ne 1 ] || \
+   [ "$(grep -Fc 'catch (SecurityException ignored)' "$WEAR_SERVICE")" -ne 1 ]; then
+  printf '%s\n' "Wear listener launch failure boundary must remain singular and explicit." >&2
+  exit 1
+fi
+if [ ! -f "$LISTENER_LAUNCH_FAILURE_PLAN" ] || \
+   ! grep -Fq 'Status: Completed' "$LISTENER_LAUNCH_FAILURE_PLAN" || \
+   ! grep -Fq 'make check' "$LISTENER_LAUNCH_FAILURE_PLAN" || \
+   ! grep -Fq 'hostile mutations' "$LISTENER_LAUNCH_FAILURE_PLAN"; then
+  printf '%s\n' "Wear listener launch failure plan must record completed verification." >&2
+  exit 1
+fi
+if ! tr '\n' ' ' < "$ROOT_DIR/AGENTS.md" | tr -s '[:space:]' ' ' | grep -Fq 'isolate activity-not-found and security launch failures' || \
+   ! grep -Fq 'isolates activity-not-found and security launch failures' "$README_FILE" || \
+   ! grep -Fq 'activity launch failures are contained' "$SECURITY_FILE" || \
+   ! grep -Fq 'listener launch failures isolated from message handling' "$VISION_FILE" || \
+   ! grep -Fq 'Isolated documented Wear activity launch failures' "$CHANGES_FILE"; then
+  printf '%s\n' "Wear listener launch failure documentation is incomplete." >&2
   exit 1
 fi
 

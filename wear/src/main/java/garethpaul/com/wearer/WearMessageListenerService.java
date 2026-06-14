@@ -5,6 +5,7 @@ package garethpaul.com.wearer;
  */
 
 
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 
 import com.google.android.gms.wearable.MessageEvent;
@@ -48,7 +49,11 @@ public class WearMessageListenerService extends WearableListenerService {
         if (message != null) {
             intent.putExtra(WearMessage.EXTRA_MESSAGE, message);
         }
-        startActivity(intent);
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException ignored) {
+        } catch (SecurityException ignored) {
+        }
     }
 
 }

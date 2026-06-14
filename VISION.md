@@ -23,6 +23,7 @@ Priority:
 - Keep wear UI message rendering tolerant of late or malformed callbacks
 - Keep listener-service startup messages null-safe before path inspection
 - Keep recognized listener events guarded against malformed sources and replay
+- Keep documented listener launch failures isolated from message handling
 - Require strict UTF-8 Wear payloads before replay state or UI delivery
 - Keep single-pass strict payload decode coupled to the exact delivered bytes
 - Wear listener rejects semantically blank payloads before replay recording or activity launch.
