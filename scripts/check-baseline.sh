@@ -310,6 +310,10 @@ for build_file in "$MOBILE_BUILD" "$WEAR_BUILD"; do
     printf '%s\n' "Both modules must disable the unstable legacy PNG cruncher exactly once." >&2
     exit 1
   fi
+  if [ "$(grep -Fc 'useNewCruncher = false' "$build_file")" -ne 1 ]; then
+    printf '%s\n' "Both modules must disable AGP 1.1.0's queued PNG implementation exactly once." >&2
+    exit 1
+  fi
 done
 
 if [ ! -f "$PNG_CRUNCHER_PLAN" ] || \
@@ -319,7 +323,7 @@ if [ ! -f "$PNG_CRUNCHER_PLAN" ] || \
    ! grep -Fq "SDK-backed make check" "$PNG_CRUNCHER_PLAN" || \
    ! grep -Fq "external working directory" "$PNG_CRUNCHER_PLAN" || \
    ! grep -Fq "hostile mutations" "$PNG_CRUNCHER_PLAN" || \
-   ! grep -Fq "two application modules disable AGP 1.1.0's legacy queued PNG cruncher" "$README_FILE"; then
+   ! grep -Fq "two application modules disable both PNG crunching and AGP 1.1.0's queued PNG" "$README_FILE"; then
   printf '%s\n' "Legacy PNG cruncher plan must record completed verification evidence." >&2
   exit 1
 fi

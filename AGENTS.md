@@ -62,8 +62,9 @@
   launch failures without broadening accepted transport or payload paths.
 - Failed Wear activity launches must release only their matching replay
   reservation so a later valid redelivery can retry.
-- Keep AGP 1.1.0's queued PNG cruncher disabled in both modules; the pinned
-  Play Services nine-patches must still pass AAPT packaging and assembly.
+- Keep PNG crunching and AGP 1.1.0's queued implementation disabled in both
+  modules; pinned Play Services nine-patches must still pass AAPT packaging
+  and assembly.
 - Keep connected-node lookup and every per-node message send bounded by the shared five-second timeout; do not restore unbounded `PendingResult.await()` calls.
 
 ## Agent workflow

@@ -11,8 +11,8 @@ parallel cruncher rather than a source, replay, or resource-validation error.
 
 ## Requirements
 
-1. Disable only the unstable legacy PNG cruncher in both Android application
-   modules through the AGP 1.1.0 `aaptOptions` DSL.
+1. Disable PNG crunching and the unstable queued implementation in both
+   Android application modules through the AGP 1.1.0 `aaptOptions` DSL.
 2. Keep AAPT resource packaging, lint, JVM tests, and debug APK assembly in the
    full gate.
 3. Add a static contract that rejects either module re-enabling or omitting the
@@ -33,15 +33,20 @@ parallel cruncher rather than a source, replay, or resource-validation error.
 
 ## Verification
 
-- AGP 1.1.0's installed DSL bytecode was inspected and confirmed that
-  `cruncherEnabled` is a native boolean option that defaults to enabled.
+- The initial `cruncherEnabled = false` implementation passed local SDK-backed
+  checks but exact-head hosted run `27495615389` still failed in
+  `QueuedCruncher` while preprocessing a dependency nine-patch.
+- AGP 1.1.0 bytecode inspection confirmed that dependency preprocessing also
+  selects the queued implementation through the separate `useNewCruncher`
+  option, which defaults to enabled.
+- A fresh Gradle user home downloaded the pinned plugin and dependency graph,
+  then rebuilt the previously failing `wear:mergeReleaseResources` path with
+  both settings disabled; mobile and Wear debug/release lint reported zero
+  issues.
 - SDK-backed make check passed from the repository root and an external
-  working directory, including zero-issue lint, both modules' debug/release
-  JVM suites, AAPT resource processing, and both debug APK assemblies.
-- The first focused SDK-backed lint run executed the previously failing
-  `wear:mergeReleaseResources` path successfully with the cruncher disabled.
-- Six hostile mutations were rejected for removing or re-enabling either
-  module setting, weakening the checker, reopening the plan, and removing the
-  documented build contract.
+  working directory, including both modules' debug/release JVM suites, the
+  portable path tests, AAPT resource processing, and both debug APK assemblies.
+- Eight hostile mutations were rejected across both modules' two settings,
+  checker enforcement, completed plan evidence, and the README contract.
 - Paired-device application behavior was not exercised because this change is
   limited to the build-time resource pipeline.

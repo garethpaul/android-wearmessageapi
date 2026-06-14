@@ -2,8 +2,9 @@
 
 ## 2026-06-14
 
-- Disabled AGP 1.1.0's unstable queued PNG cruncher in both application
-  modules while retaining AAPT resource packaging, lint, tests, and assembly.
+- Disabled PNG crunching and AGP 1.1.0's unstable queued implementation in
+  both modules while retaining AAPT resource packaging, lint, tests, and
+  assembly.
 - Isolated documented Wear activity launch failures from listener message
   handling.
 - Released the matching replay reservation after a contained Wear activity
