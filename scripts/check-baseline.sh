@@ -48,6 +48,7 @@ LISTENER_SEMANTIC_PAYLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-listener-se
 CANONICAL_PATH_PLAN="$ROOT_DIR/docs/plans/2026-06-14-canonical-wear-message-paths.md"
 LISTENER_LAUNCH_FAILURE_PLAN="$ROOT_DIR/docs/plans/2026-06-14-wear-listener-launch-failure-isolation.md"
 LAUNCH_FAILURE_REPLAY_PLAN="$ROOT_DIR/docs/plans/2026-06-14-wear-launch-failure-replay-rollback.md"
+PNG_CRUNCHER_PLAN="$ROOT_DIR/docs/plans/2026-06-14-legacy-png-cruncher-stability.md"
 
 require_sha256() {
   file=$1
@@ -305,7 +306,23 @@ for build_file in "$MOBILE_BUILD" "$WEAR_BUILD"; do
     printf '%s\n' "Both modules must pin Android build-tools 24.0.3." >&2
     exit 1
   fi
+  if [ "$(grep -Fc 'cruncherEnabled = false' "$build_file")" -ne 1 ]; then
+    printf '%s\n' "Both modules must disable the unstable legacy PNG cruncher exactly once." >&2
+    exit 1
+  fi
 done
+
+if [ ! -f "$PNG_CRUNCHER_PLAN" ] || \
+   ! grep -Fq "Status: Completed" "$PNG_CRUNCHER_PLAN" || \
+   ! grep -Fq "AGP 1.1.0" "$PNG_CRUNCHER_PLAN" || \
+   ! grep -Fq "QueuedCruncher" "$PNG_CRUNCHER_PLAN" || \
+   ! grep -Fq "SDK-backed make check" "$PNG_CRUNCHER_PLAN" || \
+   ! grep -Fq "external working directory" "$PNG_CRUNCHER_PLAN" || \
+   ! grep -Fq "hostile mutations" "$PNG_CRUNCHER_PLAN" || \
+   ! grep -Fq "two application modules disable AGP 1.1.0's legacy queued PNG cruncher" "$README_FILE"; then
+  printf '%s\n' "Legacy PNG cruncher plan must record completed verification evidence." >&2
+  exit 1
+fi
 
 if grep -Fq "play-services:+" "$MOBILE_BUILD"; then
   printf '%s\n' "Mobile module must not use dynamic Google Play Services dependencies." >&2

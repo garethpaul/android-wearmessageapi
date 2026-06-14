@@ -72,6 +72,9 @@ scripts/check-baseline.sh
 GitHub Actions runs `make check` on pushes and pull requests with pinned Java 8,
 Android API 21, and build-tools 24.0.3. Hosted verification runs the SDK-free
 baseline plus Gradle lint, unit tests, and debug assembly for both modules. The
+two application modules disable AGP 1.1.0's legacy queued PNG cruncher because
+it can fail nondeterministically on Play Services nine-patch resources; AAPT
+still packages and validates those resources during the same Gradle gates. The
 workflow uses Ubuntu 24.04, the Node 24 Actions runtime, and cancels superseded
 runs.
 Local Gradle checks accept `ANDROID_HOME` or `ANDROID_SDK_ROOT`.

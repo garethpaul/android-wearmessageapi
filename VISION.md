@@ -40,6 +40,8 @@ Priority:
 - Keep the SDK-free `make check` baseline running in GitHub Actions
 - Keep the legacy Gradle runtime behind both the verified Make launcher and a
   checksum-verified direct wrapper
+- Keep resource packaging deterministic by disabling AGP 1.1.0's unstable PNG
+  cruncher in both application modules without skipping AAPT or assembly
 - Avoid changing Google Play services dependencies without documenting impact
 - Maintain the two-module project structure
 

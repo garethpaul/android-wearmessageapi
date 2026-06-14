@@ -4,6 +4,10 @@ android {
     compileSdkVersion 21
     buildToolsVersion "24.0.3"
 
+    aaptOptions {
+        cruncherEnabled = false
+    }
+
     defaultConfig {
         applicationId "garethpaul.com.wearer"
         minSdkVersion 21

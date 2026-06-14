@@ -73,6 +73,10 @@ distribution SHA-256 values. Root Make targets remain independently routed
 through `scripts/verified-gradle.sh`, which verifies the same official archive.
 Both paths require Gradle HTTPS access when their caches are empty.
 
+Both application modules disable only AGP 1.1.0's unstable queued PNG
+cruncher. Resource packaging remains part of lint and debug assembly, while
+avoiding hosted-build null failures on pinned Play Services nine-patches.
+
 Dependency updates should come from trusted package managers and should keep lockfiles in sync when lockfiles exist. Do not commit credentials, private keys, tokens, generated secrets, or machine-local configuration. If a vulnerability depends on a compromised package, typosquatting risk, insecure transitive dependency, or unsafe build step, include the package name, affected version, and the path through which it is used.
 
 ## Safe Research Guidelines
