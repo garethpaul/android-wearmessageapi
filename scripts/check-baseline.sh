@@ -47,6 +47,7 @@ SINGLE_PASS_PAYLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-single-pass-paylo
 LISTENER_SEMANTIC_PAYLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-listener-semantic-payload.md"
 CANONICAL_PATH_PLAN="$ROOT_DIR/docs/plans/2026-06-14-canonical-wear-message-paths.md"
 LISTENER_LAUNCH_FAILURE_PLAN="$ROOT_DIR/docs/plans/2026-06-14-wear-listener-launch-failure-isolation.md"
+LAUNCH_FAILURE_REPLAY_PLAN="$ROOT_DIR/docs/plans/2026-06-14-wear-launch-failure-replay-rollback.md"
 
 require_sha256() {
   file=$1
@@ -635,8 +636,8 @@ for delivery_contract in \
   "byte[] payload = messageEvent.getData();" \
   "String message = WearMessage.decodeValidPayload(payload);" \
   "boolean validMessage = WearMessage.isValidMessageText(message);" \
-  "if (validMessage && recentMessageIds.record(" \
-  "startWearActivity(message);" \
+  "if (validMessage)" \
+  "deliverOnce(messageEvent, message);" \
   "else if (!validMessage)" \
   "Intent.FLAG_ACTIVITY_CLEAR_TOP" \
   "Intent.FLAG_ACTIVITY_SINGLE_TOP" \
@@ -656,7 +657,7 @@ fi
 
 WEAR_SERVICE_COMPACT=$(tr -d '[:space:]' < "$WEAR_SERVICE")
 if ! printf '%s\n' "$WEAR_SERVICE_COMPACT" | grep -Fq \
-    'byte[]payload=messageEvent.getData();Stringmessage=WearMessage.decodeValidPayload(payload);booleanvalidMessage=WearMessage.isValidMessageText(message);if(validMessage&&recentMessageIds.record(messageEvent.getSourceNodeId(),messageEvent.getRequestId())){startWearActivity(message);}elseif(!validMessage){super.onMessageReceived(messageEvent);}'; then
+    'byte[]payload=messageEvent.getData();Stringmessage=WearMessage.decodeValidPayload(payload);booleanvalidMessage=WearMessage.isValidMessageText(message);if(validMessage){deliverOnce(messageEvent,message);}elseif(!validMessage){super.onMessageReceived(messageEvent);}'; then
   printf '%s\n' "Wear listener must validate decoded message semantics before replay recording and activity launch." >&2
   exit 1
 fi
@@ -895,7 +896,8 @@ done
 
 for listener_replay_contract in \
   "new WearMessage.RecentMessageIds(WearMessage.MAX_RECENT_MESSAGE_IDS)" \
-  "messageEvent.getSourceNodeId(), messageEvent.getRequestId()"; do
+  "String sourceNodeId = messageEvent.getSourceNodeId();" \
+  "int requestId = messageEvent.getRequestId();"; do
   if ! grep -Fq "$listener_replay_contract" "$WEAR_SERVICE"; then
     printf '%s\n' "Wear listener must enforce recent source/request identities." >&2
     exit 1
@@ -996,9 +998,47 @@ fi
 
 listener_launch_contract=$(tr '\n' ' ' < "$WEAR_SERVICE" | tr -s '[:space:]' ' ')
 if ! grep -Fq 'import android.content.ActivityNotFoundException;' "$WEAR_SERVICE" || \
-   ! printf '%s\n' "$listener_launch_contract" | grep -Fq 'try { startActivity(intent); } catch (ActivityNotFoundException ignored) { } catch (SecurityException ignored) { }' || \
+   ! printf '%s\n' "$listener_launch_contract" | grep -Fq 'try { startActivity(intent); return true; } catch (ActivityNotFoundException ignored) { return false; } catch (SecurityException ignored) { return false; }' || \
    grep -Fq 'catch (RuntimeException' "$WEAR_SERVICE"; then
   printf '%s\n' "Wear listener must isolate only documented activity-launch failures." >&2
+  exit 1
+fi
+
+for rollback_contract in \
+  'synchronized boolean forget(String sourceNodeId, int requestId)' \
+  'return identities.remove(normalizedSourceNodeId + "\n" + requestId);' \
+  'private void deliverOnce(MessageEvent messageEvent, String message)' \
+  'if (!recentMessageIds.record(sourceNodeId, requestId))' \
+  'if (!startWearActivity(message))' \
+  'recentMessageIds.forget(sourceNodeId, requestId);' \
+  'deliverOnce(messageEvent, null);' \
+  'deliverOnce(messageEvent, message);'; do
+  if ! grep -Fq "$rollback_contract" "$WEAR_MESSAGE" "$WEAR_SERVICE"; then
+    printf '%s\n' "Wear listener launch failure replay rollback changed: $rollback_contract" >&2
+    exit 1
+  fi
+done
+for rollback_test in \
+  'failedDeliveryReleasesOnlyMatchingMessageIdentity' \
+  'failedDeliveryRejectsMissingMessageSourceNode'; do
+  if ! grep -Fq "$rollback_test" "$WEAR_MESSAGE_TEST"; then
+    printf '%s\n' "WearMessage tests must cover launch failure replay rollback: $rollback_test" >&2
+    exit 1
+  fi
+done
+if [ ! -f "$LAUNCH_FAILURE_REPLAY_PLAN" ] || \
+   ! grep -Fq 'Status: Completed' "$LAUNCH_FAILURE_REPLAY_PLAN" || \
+   ! grep -Fq 'make check' "$LAUNCH_FAILURE_REPLAY_PLAN" || \
+   ! grep -Fq 'hostile mutations' "$LAUNCH_FAILURE_REPLAY_PLAN"; then
+  printf '%s\n' "Wear launch failure replay plan must record completed verification." >&2
+  exit 1
+fi
+if ! tr '\n' ' ' < "$ROOT_DIR/AGENTS.md" | tr -s '[:space:]' ' ' | grep -Fq 'release only their matching replay reservation' || \
+   ! grep -Fq 'release only the matching source/request replay' "$README_FILE" || \
+   ! grep -Fq 'release only the matching replay reservation' "$SECURITY_FILE" || \
+   ! grep -Fq 'exact replay-state rollback' "$VISION_FILE" || \
+   ! grep -Fq 'Released the matching replay reservation' "$CHANGES_FILE"; then
+  printf '%s\n' "Wear launch failure replay rollback documentation is incomplete." >&2
   exit 1
 fi
 if [ "$(grep -Fc 'startActivity(intent);' "$WEAR_SERVICE")" -ne 1 ] || \

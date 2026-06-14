@@ -4,6 +4,8 @@
 
 - Isolated documented Wear activity launch failures from listener message
   handling.
+- Released the matching replay reservation after a contained Wear activity
+  launch failure so valid redelivery can retry.
 - Restricted Wear transport dispatch to exact canonical paths and added
   portable cross-module path tests.
 

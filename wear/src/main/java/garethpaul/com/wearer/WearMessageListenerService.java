@@ -22,17 +22,13 @@ public class WearMessageListenerService extends WearableListenerService {
         }
 
         if( WearMessage.isStartActivityPath(messageEvent.getPath()) ) {
-            if (recentMessageIds.record(
-                    messageEvent.getSourceNodeId(), messageEvent.getRequestId())) {
-                startWearActivity(null);
-            }
+            deliverOnce(messageEvent, null);
         } else if (WearMessage.isWearMessagePath(messageEvent.getPath())) {
             byte[] payload = messageEvent.getData();
             String message = WearMessage.decodeValidPayload(payload);
             boolean validMessage = WearMessage.isValidMessageText(message);
-            if (validMessage && recentMessageIds.record(
-                    messageEvent.getSourceNodeId(), messageEvent.getRequestId())) {
-                startWearActivity(message);
+            if (validMessage) {
+                deliverOnce(messageEvent, message);
             } else if (!validMessage) {
                 super.onMessageReceived(messageEvent);
             }
@@ -41,7 +37,19 @@ public class WearMessageListenerService extends WearableListenerService {
         }
     }
 
-    private void startWearActivity(String message) {
+    private void deliverOnce(MessageEvent messageEvent, String message) {
+        String sourceNodeId = messageEvent.getSourceNodeId();
+        int requestId = messageEvent.getRequestId();
+        if (!recentMessageIds.record(sourceNodeId, requestId)) {
+            return;
+        }
+
+        if (!startWearActivity(message)) {
+            recentMessageIds.forget(sourceNodeId, requestId);
+        }
+    }
+
+    private boolean startWearActivity(String message) {
         Intent intent = new Intent(this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -51,8 +59,11 @@ public class WearMessageListenerService extends WearableListenerService {
         }
         try {
             startActivity(intent);
+            return true;
         } catch (ActivityNotFoundException ignored) {
+            return false;
         } catch (SecurityException ignored) {
+            return false;
         }
     }
 

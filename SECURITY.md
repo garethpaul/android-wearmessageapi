@@ -43,6 +43,8 @@ Helpful reports include:
   variants and suffix variants are rejected before activity launch.
 - Documented activity launch failures are contained at the Wear listener
   boundary instead of terminating service message handling.
+- Contained launch failures release only the matching replay reservation so
+  redelivery can retry without clearing unrelated duplicate protection.
 - Hosted checkout credentials are not persisted. Repository-wide CODEOWNERS
   and focused baseline checks cover CI, Gradle, wrapper, and module boundaries;
   repository rules should require owner approval and `Check / check`.

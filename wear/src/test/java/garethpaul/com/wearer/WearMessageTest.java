@@ -151,4 +151,25 @@ public class WearMessageTest {
         assertTrue(recentMessageIds.record("node-a", 3));
         assertTrue(recentMessageIds.record("node-a", 1));
     }
+
+    @Test
+    public void failedDeliveryReleasesOnlyMatchingMessageIdentity() {
+        WearMessage.RecentMessageIds recentMessageIds =
+                new WearMessage.RecentMessageIds(WearMessage.MAX_RECENT_MESSAGE_IDS);
+
+        assertTrue(recentMessageIds.record("node-a", 7));
+        assertTrue(recentMessageIds.record("node-b", 7));
+        assertTrue(recentMessageIds.forget("node-a", 7));
+        assertTrue(recentMessageIds.record("node-a", 7));
+        assertFalse(recentMessageIds.record("node-b", 7));
+    }
+
+    @Test
+    public void failedDeliveryRejectsMissingMessageSourceNode() {
+        WearMessage.RecentMessageIds recentMessageIds =
+                new WearMessage.RecentMessageIds(WearMessage.MAX_RECENT_MESSAGE_IDS);
+
+        assertFalse(recentMessageIds.forget(null, 7));
+        assertFalse(recentMessageIds.forget("   ", 7));
+    }
 }

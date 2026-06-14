@@ -60,6 +60,8 @@
   `/message` identifiers in both modules.
 - Wear listener activity delivery must isolate activity-not-found and security
   launch failures without broadening accepted transport or payload paths.
+- Failed Wear activity launches must release only their matching replay
+  reservation so a later valid redelivery can retry.
 - Keep connected-node lookup and every per-node message send bounded by the shared five-second timeout; do not restore unbounded `PendingResult.await()` calls.
 
 ## Agent workflow

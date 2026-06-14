@@ -113,5 +113,14 @@ final class WearMessage {
             }
             return true;
         }
+
+        synchronized boolean forget(String sourceNodeId, int requestId) {
+            String normalizedSourceNodeId = normalizeText(sourceNodeId);
+            if (normalizedSourceNodeId.length() == 0) {
+                return false;
+            }
+
+            return identities.remove(normalizedSourceNodeId + "\n" + requestId);
+        }
     }
 }
