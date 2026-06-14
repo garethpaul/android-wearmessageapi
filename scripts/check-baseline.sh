@@ -241,14 +241,30 @@ if [ "$codeowner_rules" != '* @garethpaul' ]; then
 fi
 
 for make_contract in \
-  'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' \
+  'override ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' \
+  'ANDROID_HOME ?=' \
+  'ANDROID_SDK_ROOT ?=' \
   'ANDROID_SDK := $(if $(ANDROID_HOME),$(ANDROID_HOME),$(ANDROID_SDK_ROOT))' \
   'GRADLE ?= $(ROOT)scripts/verified-gradle.sh'; do
-  if ! grep -Fq "$make_contract" "$ROOT_DIR/Makefile"; then
+  if ! grep -Fxq "$make_contract" "$ROOT_DIR/Makefile"; then
     printf '%s\n' "Makefile must keep contract: $make_contract" >&2
     exit 1
   fi
 done
+if [ "$(grep -Fc '$(ROOT)scripts/check-baseline.sh' "$ROOT_DIR/Makefile")" -ne 1 ]; then
+  printf '%s\n' "Baseline verification must use the protected root." >&2; exit 1
+fi
+for gradle_contract in \
+  'cd $(ROOT) && ANDROID_HOME="$(ANDROID_SDK)" ANDROID_SDK_ROOT="$(ANDROID_SDK)" $(GRADLE) lint --no-daemon; \' \
+  'cd $(ROOT) && ANDROID_HOME="$(ANDROID_SDK)" ANDROID_SDK_ROOT="$(ANDROID_SDK)" $(GRADLE) test --no-daemon; \' \
+  'cd $(ROOT) && ANDROID_HOME="$(ANDROID_SDK)" ANDROID_SDK_ROOT="$(ANDROID_SDK)" $(GRADLE) assembleDebug --no-daemon; \' ; do
+  if [ "$(grep -Fc "$gradle_contract" "$ROOT_DIR/Makefile")" -ne 1 ]; then
+    printf '%s\n' "Makefile must keep complete rooted Gradle contract: $gradle_contract" >&2; exit 1
+  fi
+done
+if ! grep -Fxq "Status: Completed" "$ROOT_DIR/docs/plans/2026-06-14-wear-message-make-root-override-protection.md"; then
+  printf '%s\n' "Wear Message Make root plan must record completed status." >&2; exit 1
+fi
 
 for gradle_contract in \
   'https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-all.zip' \

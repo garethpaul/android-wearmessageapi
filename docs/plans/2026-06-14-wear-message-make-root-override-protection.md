@@ -1,6 +1,6 @@
 # Wear Message Make Root Override Protection
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -32,3 +32,19 @@ reviewed checkout.
 - Do not weaken the verified Gradle launcher or wrapper contracts.
 - Do not claim SDK/device verification when unavailable.
 - Do not merge or close pull requests without owner authorization.
+
+## Work Completed
+
+- Protected the derived root while preserving SDK and verified-Gradle
+  configurability, all targets, tasks, and skip conditions.
+- Added exact protected variable, baseline, Gradle command, and plan contracts.
+
+## Verification Results
+
+- Focused checker and shell syntax passed.
+- Local, external-directory, and hostile-root `make check` passed while
+  remaining anchored to this checkout; SDK-backed tasks truthfully skipped.
+- All twelve root, tool, path, environment, task, launcher, and plan mutations
+  were rejected.
+- Structured-file, artifact, conflict-marker, whitespace, exact-diff, and
+  credential audits passed across only the three intended files.
