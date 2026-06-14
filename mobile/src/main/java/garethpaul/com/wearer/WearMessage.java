@@ -73,10 +73,10 @@ final class WearMessage {
     }
 
     static boolean isStartActivityPath(String path) {
-        return path != null && START_ACTIVITY.equalsIgnoreCase(path);
+        return path != null && START_ACTIVITY.equals(path);
     }
 
     static boolean isWearMessagePath(String path) {
-        return path != null && WEAR_MESSAGE_PATH.equalsIgnoreCase(path);
+        return path != null && WEAR_MESSAGE_PATH.equals(path);
     }
 }

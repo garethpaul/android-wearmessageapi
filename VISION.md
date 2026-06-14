@@ -19,7 +19,7 @@ Priority:
 
 - Preserve the mobile-to-wear message flow and `/message` path behavior
 - Keep the watch activity launch path easy to inspect
-- Keep message path matching null-safe and case-insensitive across modules
+- Keep message path matching null-safe and exact across modules
 - Keep wear UI message rendering tolerant of late or malformed callbacks
 - Keep listener-service startup messages null-safe before path inspection
 - Keep recognized listener events guarded against malformed sources and replay

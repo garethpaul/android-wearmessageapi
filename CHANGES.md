@@ -1,5 +1,10 @@
 # Android Wear Message API Changes
 
+## 2026-06-14
+
+- Restricted Wear transport dispatch to exact canonical paths and added
+  portable cross-module path tests.
+
 ## 2026-06-13
 
 - Wear listener rejects semantically blank payloads before replay recording or activity launch.
@@ -75,9 +80,8 @@
   are ignored before UI dispatch and adapter updates tolerate lifecycle races.
 - Preserved mobile message text when no paired Wear node reports a successful
   send result, with an SDK-free baseline guard for the send-success check.
-- Added a baseline gate for the null-safe, case-insensitive `/start_activity`
-  and `/message` path contracts already covered by the mobile and wear unit
-  tests.
+- Added a baseline gate for the historical null-safe path contracts; current
+  mobile and Wear dispatch now requires exact canonical identifiers.
 - Documented the path-matching maintenance contract in the README and vision.
 
 ## 2026-06-08

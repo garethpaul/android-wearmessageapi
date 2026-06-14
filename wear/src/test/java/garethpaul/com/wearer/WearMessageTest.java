@@ -13,15 +13,17 @@ public class WearMessageTest {
     private static final Charset UTF_8 = Charset.forName("UTF-8");
 
     @Test
-    public void recognizesStartActivityPathCaseInsensitively() {
-        assertTrue(WearMessage.isStartActivityPath("/START_ACTIVITY"));
+    public void recognizesOnlyCanonicalStartActivityPath() {
+        assertTrue(WearMessage.isStartActivityPath("/start_activity"));
+        assertFalse(WearMessage.isStartActivityPath("/START_ACTIVITY"));
         assertFalse(WearMessage.isStartActivityPath("/message"));
         assertFalse(WearMessage.isStartActivityPath(null));
     }
 
     @Test
-    public void recognizesWearMessagePathCaseInsensitively() {
-        assertTrue(WearMessage.isWearMessagePath("/MESSAGE"));
+    public void recognizesOnlyCanonicalWearMessagePath() {
+        assertTrue(WearMessage.isWearMessagePath("/message"));
+        assertFalse(WearMessage.isWearMessagePath("/MESSAGE"));
         assertFalse(WearMessage.isWearMessagePath("/start_activity"));
         assertFalse(WearMessage.isWearMessagePath(null));
     }

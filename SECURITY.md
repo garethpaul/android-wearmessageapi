@@ -39,6 +39,8 @@ Helpful reports include:
 - A single-pass strict payload decode binds validation and delivered text to
   one captured payload array before replay tracking or activity launch.
 - Wear listener rejects semantically blank payloads before replay recording or activity launch.
+- Wear listener dispatch requires exact canonical transport paths; case
+  variants and suffix variants are rejected before activity launch.
 - Hosted checkout credentials are not persisted. Repository-wide CODEOWNERS
   and focused baseline checks cover CI, Gradle, wrapper, and module boundaries;
   repository rules should require owner approval and `Check / check`.

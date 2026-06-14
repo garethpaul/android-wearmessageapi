@@ -33,6 +33,8 @@ MOBILE_MESSAGE="$ROOT_DIR/mobile/src/main/java/garethpaul/com/wearer/WearMessage
 WEAR_MESSAGE="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/WearMessage.java"
 MOBILE_MESSAGE_TEST="$ROOT_DIR/mobile/src/test/java/garethpaul/com/wearer/WearMessageTest.java"
 WEAR_MESSAGE_TEST="$ROOT_DIR/wear/src/test/java/garethpaul/com/wearer/WearMessageTest.java"
+PATH_HOST_TEST="$ROOT_DIR/scripts/WearMessagePathHostTest.java"
+PATH_HOST_RUNNER="$ROOT_DIR/scripts/test-wear-message-paths.sh"
 CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 CODEOWNERS="$ROOT_DIR/.github/CODEOWNERS"
 SEND_TIMEOUT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-mobile-send-timeouts.md"
@@ -43,6 +45,7 @@ LISTENER_REPLAY_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-listener-replay-guard
 STRICT_UTF8_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-strict-utf8-payload.md"
 SINGLE_PASS_PAYLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-single-pass-payload-decode.md"
 LISTENER_SEMANTIC_PAYLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-13-wear-listener-semantic-payload.md"
+CANONICAL_PATH_PLAN="$ROOT_DIR/docs/plans/2026-06-14-canonical-wear-message-paths.md"
 
 require_sha256() {
   file=$1
@@ -736,12 +739,16 @@ for message_file in "$MOBILE_MESSAGE" "$WEAR_MESSAGE"; do
     printf '%s\n' "WearMessage text normalization must trim whitespace-only sends." >&2
     exit 1
   fi
-  if ! grep -Fq "path != null && START_ACTIVITY.equalsIgnoreCase(path)" "$message_file"; then
-    printf '%s\n' "WearMessage must null-guard startup path checks." >&2
+  if ! grep -Fq "path != null && START_ACTIVITY.equals(path)" "$message_file"; then
+    printf '%s\n' "WearMessage must require the canonical startup path." >&2
     exit 1
   fi
-  if ! grep -Fq "path != null && WEAR_MESSAGE_PATH.equalsIgnoreCase(path)" "$message_file"; then
-    printf '%s\n' "WearMessage must null-guard text message path checks." >&2
+  if ! grep -Fq "path != null && WEAR_MESSAGE_PATH.equals(path)" "$message_file"; then
+    printf '%s\n' "WearMessage must require the canonical text message path." >&2
+    exit 1
+  fi
+  if grep -Fq "equalsIgnoreCase(path)" "$message_file"; then
+    printf '%s\n' "WearMessage protocol paths must not accept case variants." >&2
     exit 1
   fi
   if ! grep -Fq "MAX_MESSAGE_BYTES = 4096" "$message_file" || \
@@ -895,12 +902,14 @@ for listener_replay_contract in \
 done
 
 for test_file in "$MOBILE_MESSAGE_TEST" "$WEAR_MESSAGE_TEST"; do
-  if ! grep -Fq "recognizesStartActivityPathCaseInsensitively" "$test_file"; then
-    printf '%s\n' "WearMessage tests must cover case-insensitive start path matching." >&2
+  if ! grep -Fq "recognizesOnlyCanonicalStartActivityPath" "$test_file" || \
+     ! grep -Fq 'assertFalse(WearMessage.isStartActivityPath("/START_ACTIVITY"))' "$test_file"; then
+    printf '%s\n' "WearMessage tests must reject noncanonical start paths." >&2
     exit 1
   fi
-  if ! grep -Fq "recognizesWearMessagePathCaseInsensitively" "$test_file"; then
-    printf '%s\n' "WearMessage tests must cover case-insensitive text path matching." >&2
+  if ! grep -Fq "recognizesOnlyCanonicalWearMessagePath" "$test_file" || \
+     ! grep -Fq 'assertFalse(WearMessage.isWearMessagePath("/MESSAGE"))' "$test_file"; then
+    printf '%s\n' "WearMessage tests must reject noncanonical text paths." >&2
     exit 1
   fi
   if ! grep -Fq "encodesMessagesAsUtf8" "$test_file"; then
@@ -934,6 +943,55 @@ for test_file in "$MOBILE_MESSAGE_TEST" "$WEAR_MESSAGE_TEST"; do
     exit 1
   fi
 done
+
+for path_host_contract in \
+  'WearMessage.isStartActivityPath("/start_activity")' \
+  'WearMessage.isStartActivityPath("/START_ACTIVITY")' \
+  'WearMessage.isStartActivityPath("/start_activity/")' \
+  'WearMessage.isStartActivityPath(null)' \
+  'WearMessage.isWearMessagePath("/message")' \
+  'WearMessage.isWearMessagePath("/MESSAGE")' \
+  'WearMessage.isWearMessagePath("/message/")' \
+  'WearMessage.isWearMessagePath(null)' \
+  'if (cases != 8)' \
+  'Canonical Wear message path tests passed:'; do
+  if ! grep -Fq "$path_host_contract" "$PATH_HOST_TEST"; then
+    printf '%s\n' "Portable Wear path coverage is missing: $path_host_contract" >&2
+    exit 1
+  fi
+done
+for path_runner_contract in \
+  'for module in mobile wear; do' \
+  '"$ROOT_DIR/$module/src/main/java/garethpaul/com/wearer/WearMessage.java"' \
+  '"$ROOT_DIR/scripts/WearMessagePathHostTest.java"' \
+  'if [ -d "$OUTPUT_DIR" ]; then' \
+  'rm -rf -- "$OUTPUT_DIR"' \
+  'trap cleanup EXIT' \
+  'trap '\''cleanup; exit 1'\'' HUP INT TERM'; do
+  if ! grep -Fq "$path_runner_contract" "$PATH_HOST_RUNNER"; then
+    printf '%s\n' "Portable Wear path runner changed: $path_runner_contract" >&2
+    exit 1
+  fi
+done
+if [ "$(grep -Fc '$(ROOT)scripts/test-wear-message-paths.sh' "$ROOT_DIR/Makefile")" -ne 1 ]; then
+  printf '%s\n' "Make test must run portable Wear path tests exactly once." >&2
+  exit 1
+fi
+if [ ! -f "$CANONICAL_PATH_PLAN" ] || \
+   ! grep -Fq "Status: Completed" "$CANONICAL_PATH_PLAN" || \
+   ! grep -Fq "make check" "$CANONICAL_PATH_PLAN" || \
+   ! grep -Fq "hostile mutations" "$CANONICAL_PATH_PLAN"; then
+  printf '%s\n' "Canonical Wear path plan must record completed verification." >&2
+  exit 1
+fi
+if ! tr '\n' ' ' < "$ROOT_DIR/AGENTS.md" | tr -s '[:space:]' ' ' | grep -Fq 'exact canonical `/start_activity` and `/message` identifiers' || \
+   ! tr '\n' ' ' < "$README_FILE" | tr -s '[:space:]' ' ' | grep -Fq 'exact canonical identifiers in both modules' || \
+   ! grep -Fq 'exact canonical transport paths' "$SECURITY_FILE" || \
+   ! grep -Fq 'message path matching null-safe and exact across modules' "$VISION_FILE" || \
+   ! grep -Fq 'exact canonical paths' "$CHANGES_FILE"; then
+  printf '%s\n' "Canonical Wear path documentation is incomplete." >&2
+  exit 1
+fi
 
 for replay_test in \
   "rejectsDuplicateMessageIdentity" \

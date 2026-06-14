@@ -113,8 +113,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - The Wear listener service is explicitly exported only for the legacy Google
   Play services `BIND_LISTENER` action; the launcher remains separate from the
   private message activity.
-- The `/start_activity` and `/message` path helpers are null-safe and
-  case-insensitive in both modules.
+- The `/start_activity` and `/message` path helpers are null-safe and require
+  exact canonical identifiers in both modules.
 - The wear receiver decodes accepted message payloads before UI dispatch and
   ignores callbacks when the list adapter is unavailable.
 - The listener uses a single-pass strict payload decode over one captured byte

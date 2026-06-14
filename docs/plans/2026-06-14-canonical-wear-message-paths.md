@@ -1,6 +1,6 @@
 # Canonical Wear Message Paths
 
-Status: In Progress
+Status: Completed
 
 ## Problem
 
@@ -64,4 +64,15 @@ truthful verification while replacing obsolete case-insensitive guidance.
 
 ## Verification
 
-- Pending implementation and bounded validation.
+- Both production helpers, mirrored JUnit suites, and the portable cross-module
+  host test passed through root and external-directory `make check`; Android
+  SDK-dependent tasks truthfully retain their existing conditional execution.
+- Ten hostile mutations were rejected for case-insensitive or inverted path
+  checks, asymmetric module behavior, missing uppercase rejection, missing
+  portable invocation or cleanup, documentation drift, and reopened plan
+  status.
+- Final verification covered shell syntax, direct Java 7 compilation of each
+  production helper, exact diff, whitespace, conflict markers,
+  credential-shaped additions, and generated artifacts.
+- Paired-device, emulator, transport, and activity-launch runtime behavior were
+  not exercised.
