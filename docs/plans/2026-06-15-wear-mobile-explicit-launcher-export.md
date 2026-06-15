@@ -66,7 +66,7 @@ Document the paired mobile launcher boundary and completed verification.
 - Launch regression is controlled by binding the mobile activity name, true
   export, and both launcher entries in one structural block.
 - Overexposure is controlled by requiring one mobile export occurrence.
-- This PR is stacked on PR #13 and must retain base-first merge ordering.
+- This PR is stacked on PR #11 and must retain base-first merge ordering.
 
 ## Out Of Scope
 
