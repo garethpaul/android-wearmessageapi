@@ -50,6 +50,7 @@ LISTENER_LAUNCH_FAILURE_PLAN="$ROOT_DIR/docs/plans/2026-06-14-wear-listener-laun
 LAUNCH_FAILURE_REPLAY_PLAN="$ROOT_DIR/docs/plans/2026-06-14-wear-launch-failure-replay-rollback.md"
 PNG_CRUNCHER_PLAN="$ROOT_DIR/docs/plans/2026-06-14-legacy-png-cruncher-stability.md"
 DEVICE_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-android-wearmessageapi-device-verification-checklist.md"
+MOBILE_LAUNCHER_EXPORT_PLAN="$ROOT_DIR/docs/plans/2026-06-15-wear-mobile-explicit-launcher-export.md"
 
 require_sha256() {
   file=$1
@@ -433,6 +434,75 @@ fi
 for manifest in "$MOBILE_MANIFEST" "$WEAR_MANIFEST"; do
   if ! grep -Fq 'android:allowBackup="false"' "$manifest"; then
     printf '%s\n' "Android backup must stay disabled in both manifests." >&2
+    exit 1
+  fi
+done
+
+mobile_exported_count=$(awk '
+  {
+    line = $0
+    while (match(line, /android:exported[[:space:]]*=/)) {
+      count++
+      line = substr(line, RSTART + RLENGTH)
+    }
+  }
+  END { print count + 0 }
+' "$MOBILE_MANIFEST")
+if [ "$mobile_exported_count" -ne 1 ]; then
+  printf '%s\n' "Mobile manifest must contain exactly one explicit exported declaration." >&2
+  exit 1
+fi
+
+mobile_launcher_block=$(awk '
+  /^[[:space:]]*<activity([[:space:]]|$)/ {
+    capture = 1
+    block = ""
+  }
+  capture {
+    block = block $0 "\n"
+  }
+  capture && /<\/activity>/ {
+    if (index(block, "android:name=\".MainActivity\"") != 0) {
+      matched++
+      selected = block
+    }
+    capture = 0
+  }
+  END {
+    if (matched != 1) {
+      exit 1
+    }
+    printf "%s", selected
+  }
+' "$MOBILE_MANIFEST") || {
+  printf '%s\n' "Mobile manifest must keep exactly one named launcher activity block." >&2
+  exit 1
+}
+
+for mobile_launcher_contract in \
+  'android:name=".MainActivity"' \
+  'android:exported="true"' \
+  'android.intent.action.MAIN' \
+  'android.intent.category.LAUNCHER'; do
+  if ! printf '%s\n' "$mobile_launcher_block" | grep -Fq -- "$mobile_launcher_contract"; then
+    printf '%s\n' "Mobile activity must preserve its explicit launcher boundary: $mobile_launcher_contract" >&2
+    exit 1
+  fi
+done
+
+mobile_launcher_guidance="The mobile explicit launcher export boundary is limited to .MainActivity and preserves its MAIN/LAUNCHER entry point."
+for mobile_launcher_document in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$mobile_launcher_guidance" "$ROOT_DIR/$mobile_launcher_document"; then
+    printf '%s\n' "$mobile_launcher_document must document the mobile launcher export boundary." >&2
+    exit 1
+  fi
+done
+for mobile_launcher_plan_contract in \
+  "Status: Completed" \
+  "make check" \
+  "mutations"; do
+  if ! grep -Fq "$mobile_launcher_plan_contract" "$MOBILE_LAUNCHER_EXPORT_PLAN"; then
+    printf '%s\n' "Mobile launcher export plan must preserve completion evidence: $mobile_launcher_plan_contract" >&2
     exit 1
   fi
 done

@@ -56,6 +56,7 @@
 - Preserve the listener's single-pass strict payload decode over one captured
   byte array before replay tracking or activity delivery.
 - Wear listener rejects semantically blank payloads before replay recording or activity launch.
+- The mobile explicit launcher export boundary is limited to .MainActivity and preserves its MAIN/LAUNCHER entry point.
 - Wear transport paths must match the exact canonical `/start_activity` and
   `/message` identifiers in both modules.
 - Wear listener activity delivery must isolate activity-not-found and security

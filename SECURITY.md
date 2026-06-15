@@ -39,6 +39,7 @@ Helpful reports include:
 - A single-pass strict payload decode binds validation and delivered text to
   one captured payload array before replay tracking or activity launch.
 - Wear listener rejects semantically blank payloads before replay recording or activity launch.
+- The mobile explicit launcher export boundary is limited to .MainActivity and preserves its MAIN/LAUNCHER entry point.
 - Wear listener dispatch requires exact canonical transport paths; case
   variants and suffix variants are rejected before activity launch.
 - Documented activity launch failures are contained at the Wear listener

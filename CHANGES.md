@@ -1,5 +1,7 @@
 # Android Wear Message API Changes
 
+- The mobile explicit launcher export boundary is limited to .MainActivity and preserves its MAIN/LAUNCHER entry point.
+
 ## 2026-06-14
 
 - Added an exact-commit Wear Message device verification matrix for pairing,

@@ -119,6 +119,7 @@ explicit unexecuted rows.
 - This looks like a legacy Android project or sample. Expect Android SDK, Gradle, and support-library versions to matter.
 - The mobile and wear message helpers use explicit UTF-8 payloads and treat null
   text or payloads as empty values.
+- The mobile explicit launcher export boundary is limited to .MainActivity and preserves its MAIN/LAUNCHER entry point.
 - The Wear listener service is explicitly exported only for the legacy Google
   Play services `BIND_LISTENER` action; the launcher remains separate from the
   private message activity.
