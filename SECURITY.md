@@ -53,6 +53,7 @@ Helpful reports include:
   `buildSrc` are rejected without freezing ordinary source and test edits.
 - Hosted CI provisions pinned Java 8 and Android API 21 tooling and requires
   Gradle lint, unit tests, and debug assembly instead of accepting SDK skips.
+- The handset releases both Google API connection callback registrations before disconnecting during activity teardown.
 - The Make targets download Gradle 2.2.1 from the official service and verify
   its published SHA-256 checksum before running any build logic.
 - The exported Wear launcher strips external extras before opening the private

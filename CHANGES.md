@@ -1,6 +1,7 @@
 # Android Wear Message API Changes
 
 - The mobile explicit launcher export boundary is limited to .MainActivity and preserves its MAIN/LAUNCHER entry point.
+- The handset releases both Google API connection callback registrations before disconnecting during activity teardown.
 
 ## 2026-06-14
 

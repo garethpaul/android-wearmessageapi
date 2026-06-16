@@ -64,6 +64,7 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
         wearConnected = false;
         if (mApiClient != null) {
             mApiClient.unregisterConnectionCallbacks( this );
+            mApiClient.unregisterConnectionFailedListener( this );
             if (mApiClient.isConnected() || mApiClient.isConnecting()) {
                 mApiClient.disconnect();
             }

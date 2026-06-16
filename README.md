@@ -156,6 +156,7 @@ explicit unexecuted rows.
 - The send button also stays disabled until the Wear client connects and after
   connection suspension or failure; send completion cannot re-enable a
   disconnected sender.
+- The handset releases both Google API connection callback registrations before disconnecting during activity teardown.
 - The mobile sends guard missing connected-node results, node IDs, send
   results, and statuses before clearing input.
 - The mobile sender bounds node lookup and message delivery waits so stalled

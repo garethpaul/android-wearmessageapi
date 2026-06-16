@@ -1,6 +1,6 @@
 # Wear Mobile Failure Listener Teardown
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -75,3 +75,14 @@ activity teardown.
 - Message transport, node selection, paths, payload handling, replay, activity
   launch, user-visible text, and paired-device behavior.
 - Emulator, physical-device, live disconnect, and late-callback injection.
+
+## Completion Evidence
+
+- SDK-backed mobile lint passed with zero issues; mobile and Wear debug/release
+  unit tests passed; both debug APKs assembled on June 16, 2026.
+- SDK-backed repository-root `make check` and external-directory
+  `make -f /absolute/path/Makefile check` both passed on June 16, 2026,
+  including zero-issue mobile/Wear lint, both modules' debug/release unit tests,
+  canonical path host tests, and both debug APK assemblies.
+- Isolated mutations cover missing and duplicate failure-listener teardown,
+  after-disconnect ordering, guidance removal, and reopened plan status.

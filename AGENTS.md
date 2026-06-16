@@ -57,6 +57,7 @@
   byte array before replay tracking or activity delivery.
 - Wear listener rejects semantically blank payloads before replay recording or activity launch.
 - The mobile explicit launcher export boundary is limited to .MainActivity and preserves its MAIN/LAUNCHER entry point.
+- The handset releases both Google API connection callback registrations before disconnecting during activity teardown.
 - Wear transport paths must match the exact canonical `/start_activity` and
   `/message` identifiers in both modules.
 - Wear listener activity delivery must isolate activity-not-found and security

@@ -51,6 +51,7 @@ LAUNCH_FAILURE_REPLAY_PLAN="$ROOT_DIR/docs/plans/2026-06-14-wear-launch-failure-
 PNG_CRUNCHER_PLAN="$ROOT_DIR/docs/plans/2026-06-14-legacy-png-cruncher-stability.md"
 DEVICE_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-android-wearmessageapi-device-verification-checklist.md"
 MOBILE_LAUNCHER_EXPORT_PLAN="$ROOT_DIR/docs/plans/2026-06-15-wear-mobile-explicit-launcher-export.md"
+FAILURE_LISTENER_TEARDOWN_PLAN="$ROOT_DIR/docs/plans/2026-06-16-wear-mobile-failure-listener-teardown.md"
 
 require_sha256() {
   file=$1
@@ -582,10 +583,46 @@ if ! grep -Fq ".addOnConnectionFailedListener( this )" "$MOBILE_ACTIVITY" || \
   exit 1
 fi
 
-if ! grep -Fq "unregisterConnectionCallbacks( this )" "$MOBILE_ACTIVITY"; then
-  printf '%s\n' "Mobile GoogleApiClient callbacks must be unregistered." >&2
+if [ "$(grep -Fc "unregisterConnectionCallbacks( this )" "$MOBILE_ACTIVITY" || true)" -ne 1 ] || \
+   [ "$(grep -Fc "unregisterConnectionFailedListener( this )" "$MOBILE_ACTIVITY" || true)" -ne 1 ]; then
+  printf '%s\n' "Mobile GoogleApiClient callback registrations must each be released once." >&2
   exit 1
 fi
+
+MOBILE_DESTROY=$(sed -n '/protected void onDestroy()/,/super.onDestroy();/p' "$MOBILE_ACTIVITY")
+callbacks_line=$(printf '%s\n' "$MOBILE_DESTROY" | grep -nF "unregisterConnectionCallbacks( this )" | cut -d: -f1)
+failure_listener_line=$(printf '%s\n' "$MOBILE_DESTROY" | grep -nF "unregisterConnectionFailedListener( this )" | cut -d: -f1)
+disconnect_guard_line=$(printf '%s\n' "$MOBILE_DESTROY" | grep -nF "mApiClient.isConnected() || mApiClient.isConnecting()" | cut -d: -f1)
+disconnect_line=$(printf '%s\n' "$MOBILE_DESTROY" | grep -nF "mApiClient.disconnect();" | cut -d: -f1)
+super_destroy_line=$(printf '%s\n' "$MOBILE_DESTROY" | grep -nF "super.onDestroy();" | cut -d: -f1)
+if [ -z "$callbacks_line" ] || [ -z "$failure_listener_line" ] || \
+   [ -z "$disconnect_guard_line" ] || [ -z "$disconnect_line" ] || \
+   [ -z "$super_destroy_line" ] || \
+   [ "$callbacks_line" -ge "$failure_listener_line" ] || \
+   [ "$failure_listener_line" -ge "$disconnect_guard_line" ] || \
+   [ "$disconnect_guard_line" -ge "$disconnect_line" ] || \
+   [ "$disconnect_line" -ge "$super_destroy_line" ]; then
+  printf '%s\n' "Mobile GoogleApiClient listeners must be released before disconnect and activity teardown." >&2
+  exit 1
+fi
+
+for failure_listener_plan_contract in \
+  "Status: Completed" \
+  "unregisterConnectionFailedListener" \
+  "make check" \
+  "mutations"; do
+  if ! grep -Fq "$failure_listener_plan_contract" "$FAILURE_LISTENER_TEARDOWN_PLAN"; then
+    printf '%s\n' "Wear failure-listener teardown plan must record completed verification: $failure_listener_plan_contract" >&2
+    exit 1
+  fi
+done
+
+for failure_listener_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "The handset releases both Google API connection callback registrations before disconnecting during activity teardown." "$ROOT_DIR/$failure_listener_doc"; then
+    printf '%s\n' "$failure_listener_doc must document symmetric Google API callback teardown." >&2
+    exit 1
+  fi
+done
 
 if ! grep -Fq "mApiClient.isConnected() || mApiClient.isConnecting()" "$MOBILE_ACTIVITY"; then
   printf '%s\n' "Mobile GoogleApiClient cleanup must handle connected and connecting states." >&2
