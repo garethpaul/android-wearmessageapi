@@ -2,6 +2,7 @@
 
 - The mobile explicit launcher export boundary is limited to .MainActivity and preserves its MAIN/LAUNCHER entry point.
 - The handset releases both Google API connection callback registrations before disconnecting during activity teardown.
+- The handset ignores queued Google API connection callbacks once its activity is finishing or destroyed.
 
 ## 2026-06-14
 

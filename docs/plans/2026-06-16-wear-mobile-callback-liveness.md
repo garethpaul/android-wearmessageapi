@@ -1,6 +1,6 @@
 # Wear Mobile Callback Liveness
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -82,3 +82,19 @@ handset activity.
 - Message sending, node selection, paths, payload validation, replay handling,
   Wear activity launch behavior, or user-visible text.
 - Emulator, physical-device, paired transport, or late-callback injection.
+
+## Completion Evidence
+
+- POSIX shell syntax and the focused baseline checker passed with one liveness
+  guard in each Google API callback before connection-state and send-button
+  updates.
+- Repository-root and external-directory `make check` passed with Java 8 and
+  Android API 21 tooling on June 16, 2026, including zero-issue mobile and Wear
+  lint, both modules' debug/release JVM suites, two canonical-path host runs,
+  and both debug APK assemblies.
+- Five isolated hostile mutations were rejected for a missing suspension
+  guard, missing failure guard, guard after state mutation, duplicate guard,
+  and removed maintained guidance. A reopened plan-status mutation is also
+  enforced by the final checker contract.
+- Emulator, physical-device, paired transport, and late-callback injection
+  remain unexecuted and are not claimed by this plan.

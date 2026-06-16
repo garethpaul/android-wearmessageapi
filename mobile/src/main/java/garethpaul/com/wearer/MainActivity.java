@@ -210,12 +210,20 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
 
     @Override
     public void onConnectionSuspended(int i) {
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+
         wearConnected = false;
         updateSendButtonState();
     }
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
+        if (isFinishing() || isDestroyed()) {
+            return;
+        }
+
         wearConnected = false;
         updateSendButtonState();
     }

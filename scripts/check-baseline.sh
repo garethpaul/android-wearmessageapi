@@ -52,6 +52,7 @@ PNG_CRUNCHER_PLAN="$ROOT_DIR/docs/plans/2026-06-14-legacy-png-cruncher-stability
 DEVICE_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-android-wearmessageapi-device-verification-checklist.md"
 MOBILE_LAUNCHER_EXPORT_PLAN="$ROOT_DIR/docs/plans/2026-06-15-wear-mobile-explicit-launcher-export.md"
 FAILURE_LISTENER_TEARDOWN_PLAN="$ROOT_DIR/docs/plans/2026-06-16-wear-mobile-failure-listener-teardown.md"
+CALLBACK_LIVENESS_PLAN="$ROOT_DIR/docs/plans/2026-06-16-wear-mobile-callback-liveness.md"
 
 require_sha256() {
   file=$1
@@ -620,6 +621,47 @@ done
 for failure_listener_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
   if ! grep -Fq "The handset releases both Google API connection callback registrations before disconnecting during activity teardown." "$ROOT_DIR/$failure_listener_doc"; then
     printf '%s\n' "$failure_listener_doc must document symmetric Google API callback teardown." >&2
+    exit 1
+  fi
+done
+
+assert_callback_liveness() {
+  callback_name=$1
+  state_assignment=$2
+  callback_block=$(awk -v callback_name="$callback_name" '
+    $0 ~ "public void " callback_name "\\(" { capture = 1 }
+    capture && seen && /^[[:space:]]*@Override/ { exit }
+    capture { print; seen = 1 }
+  ' "$MOBILE_ACTIVITY")
+  callback_compact=$(printf '%s\n' "$callback_block" | tr -d '[:space:]')
+  guard='if(isFinishing()||isDestroyed()){return;}'
+
+  if [ -z "$callback_block" ] || \
+     [ "$(printf '%s\n' "$callback_block" | grep -Fc "if (isFinishing() || isDestroyed())" || true)" -ne 1 ] || \
+     ! printf '%s\n' "$callback_compact" | grep -Fq "${guard}${state_assignment}updateSendButtonState();"; then
+    printf '%s\n' "Mobile $callback_name must reject dead activity callbacks before state and UI mutation." >&2
+    exit 1
+  fi
+}
+
+assert_callback_liveness "onConnected" "wearConnected=true;"
+assert_callback_liveness "onConnectionSuspended" "wearConnected=false;"
+assert_callback_liveness "onConnectionFailed" "wearConnected=false;"
+
+for callback_liveness_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "The handset ignores queued Google API connection callbacks once its activity is finishing or destroyed." "$ROOT_DIR/$callback_liveness_doc"; then
+    printf '%s\n' "$callback_liveness_doc must document callback liveness ownership." >&2
+    exit 1
+  fi
+done
+
+for callback_liveness_plan_contract in \
+  "Status: Completed" \
+  "make check" \
+  "hostile mutations" \
+  "late-callback injection"; do
+  if ! grep -Fq "$callback_liveness_plan_contract" "$CALLBACK_LIVENESS_PLAN"; then
+    printf '%s\n' "Wear callback-liveness plan must record completed verification: $callback_liveness_plan_contract" >&2
     exit 1
   fi
 done

@@ -35,6 +35,7 @@ Priority:
 - Keep one mobile send in flight at a time and surface failed sends
 - Keep mobile send controls disabled unless the Wear client is connected
 - The handset releases both Google API connection callback registrations before disconnecting during activity teardown.
+- The handset ignores queued Google API connection callbacks once its activity is finishing or destroyed.
 - Keep mobile sends guarded when connected-node data is incomplete
 - Keep blank or whitespace-only mobile messages from being sent
 - Keep mobile and wear startup view binding checked before connecting Wear APIs
