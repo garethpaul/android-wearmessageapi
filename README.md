@@ -130,6 +130,7 @@ explicit unexecuted rows.
 - Failed activity launches release only the matching source/request replay
   reservation, allowing a later valid redelivery to retry without weakening
   duplicate suppression for successful delivery.
+- Incoming Wear activity launches are limited per source node with a bounded monotonic in-process cooldown.
 - The wear receiver decodes accepted message payloads before UI dispatch and
   ignores callbacks when the list adapter is unavailable.
 - The listener uses a single-pass strict payload decode over one captured byte

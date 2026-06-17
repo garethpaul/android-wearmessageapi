@@ -1,7 +1,7 @@
 ---
 title: Wear Listener Launch Rate Limit
 type: security
-status: planned
+status: completed
 date: 2026-06-17
 owner: repository maintainers
 ---
@@ -113,6 +113,30 @@ residual risk.
   verification evidence.
 - Audit exact diff, generated artifacts, dependencies, credentials, conflict
   markers, file modes, and whitespace before commit.
+
+## Work Completed
+
+- Added a bounded per-source monotonic delivery limiter with exact rollback.
+- Applied rate admission after replay identity validation and before activity
+  launch, preserving denied message identities and rolling back only contained
+  launch failures.
+- Added host and Gradle unit matrices, Make wiring, static contracts, and
+  maintained repository guidance.
+
+## Verification Results
+
+- The host gate failed before implementation because the limiter source did
+  not exist, confirming the new test-first boundary.
+- Canonical path tests and all eight delivery-rate host cases pass.
+- SDK-backed two-module `lint test assembleDebug` passes with zero lint issues.
+- An isolated completed candidate copy passes SDK-backed `make check`.
+- Repository and external-working-directory SDK-backed `make check` both pass
+  baseline contracts, host tests, module tests, zero-issue lint, and debug
+  assembly.
+- Fourteen isolated hostile mutations were rejected across production limits
+  and interval validation, monotonic ordering, cooldown arithmetic, accepted state,
+  eviction, exact rollback, listener admission, clock source, host coverage,
+  Make wiring, guidance, status, and verification evidence.
 
 ## References
 

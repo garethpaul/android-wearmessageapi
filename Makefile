@@ -16,6 +16,7 @@ lint:
 
 test:
 	$(ROOT)scripts/test-wear-message-paths.sh
+	$(ROOT)scripts/test-wear-delivery-rate-limiter.sh
 	@if [ -n "$(ANDROID_SDK)" ] && [ -d "$(ANDROID_SDK)" ]; then \
 		cd $(ROOT) && ANDROID_HOME="$(ANDROID_SDK)" ANDROID_SDK_ROOT="$(ANDROID_SDK)" $(GRADLE) test --no-daemon; \
 	else \

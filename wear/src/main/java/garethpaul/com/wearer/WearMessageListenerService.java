@@ -7,13 +7,20 @@ package garethpaul.com.wearer;
 
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.os.SystemClock;
 
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.WearableListenerService;
 
 public class WearMessageListenerService extends WearableListenerService {
+    private static final int MAX_RATE_LIMITED_SOURCES = 100;
+    private static final long MIN_DELIVERY_INTERVAL_MILLIS = 500L;
+
     private final WearMessage.RecentMessageIds recentMessageIds =
             new WearMessage.RecentMessageIds(WearMessage.MAX_RECENT_MESSAGE_IDS);
+    private final MessageDeliveryRateLimiter deliveryRateLimiter =
+            new MessageDeliveryRateLimiter(
+                    MAX_RATE_LIMITED_SOURCES, MIN_DELIVERY_INTERVAL_MILLIS);
 
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
@@ -44,8 +51,14 @@ public class WearMessageListenerService extends WearableListenerService {
             return;
         }
 
+        long acceptedAtMillis = SystemClock.elapsedRealtime();
+        if (!deliveryRateLimiter.allow(sourceNodeId, acceptedAtMillis)) {
+            return;
+        }
+
         if (!startWearActivity(message)) {
             recentMessageIds.forget(sourceNodeId, requestId);
+            deliveryRateLimiter.forget(sourceNodeId, acceptedAtMillis);
         }
     }
 

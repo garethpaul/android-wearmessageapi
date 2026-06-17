@@ -65,6 +65,7 @@
   launch failures without broadening accepted transport or payload paths.
 - Failed Wear activity launches must release only their matching replay
   reservation so a later valid redelivery can retry.
+- Incoming Wear activity launches are limited per source node with a bounded monotonic in-process cooldown.
 - Keep PNG crunching and AGP 1.1.0's queued implementation disabled in both
   modules; pinned Play Services nine-patches must still pass AAPT packaging
   and assembly.

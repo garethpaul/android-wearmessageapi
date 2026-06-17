@@ -16,6 +16,7 @@
   handling.
 - Released the matching replay reservation after a contained Wear activity
   launch failure so valid redelivery can retry.
+- Incoming Wear activity launches are limited per source node with a bounded monotonic in-process cooldown.
 - Restricted Wear transport dispatch to exact canonical paths and added
   portable cross-module path tests.
 

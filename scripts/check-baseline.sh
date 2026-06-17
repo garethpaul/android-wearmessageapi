@@ -33,6 +33,10 @@ MOBILE_MESSAGE="$ROOT_DIR/mobile/src/main/java/garethpaul/com/wearer/WearMessage
 WEAR_MESSAGE="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/WearMessage.java"
 MOBILE_MESSAGE_TEST="$ROOT_DIR/mobile/src/test/java/garethpaul/com/wearer/WearMessageTest.java"
 WEAR_MESSAGE_TEST="$ROOT_DIR/wear/src/test/java/garethpaul/com/wearer/WearMessageTest.java"
+DELIVERY_RATE_LIMITER="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/MessageDeliveryRateLimiter.java"
+DELIVERY_RATE_LIMITER_TEST="$ROOT_DIR/wear/src/test/java/garethpaul/com/wearer/MessageDeliveryRateLimiterTest.java"
+DELIVERY_RATE_HOST_TEST="$ROOT_DIR/scripts/MessageDeliveryRateLimiterHostTest.java"
+DELIVERY_RATE_HOST_RUNNER="$ROOT_DIR/scripts/test-wear-delivery-rate-limiter.sh"
 PATH_HOST_TEST="$ROOT_DIR/scripts/WearMessagePathHostTest.java"
 PATH_HOST_RUNNER="$ROOT_DIR/scripts/test-wear-message-paths.sh"
 CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
@@ -53,6 +57,7 @@ DEVICE_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-android-wearmessageapi
 MOBILE_LAUNCHER_EXPORT_PLAN="$ROOT_DIR/docs/plans/2026-06-15-wear-mobile-explicit-launcher-export.md"
 FAILURE_LISTENER_TEARDOWN_PLAN="$ROOT_DIR/docs/plans/2026-06-16-wear-mobile-failure-listener-teardown.md"
 CALLBACK_LIVENESS_PLAN="$ROOT_DIR/docs/plans/2026-06-16-wear-mobile-callback-liveness.md"
+DELIVERY_RATE_LIMIT_PLAN="$ROOT_DIR/docs/plans/2026-06-17-wear-listener-launch-rate-limit.md"
 
 require_sha256() {
   file=$1
@@ -1202,6 +1207,10 @@ if [ "$(grep -Fc '$(ROOT)scripts/test-wear-message-paths.sh' "$ROOT_DIR/Makefile
   printf '%s\n' "Make test must run portable Wear path tests exactly once." >&2
   exit 1
 fi
+if [ "$(grep -Fc '$(ROOT)scripts/test-wear-delivery-rate-limiter.sh' "$ROOT_DIR/Makefile")" -ne 1 ]; then
+  printf '%s\n' "Make test must run the Wear delivery rate limiter tests exactly once." >&2
+  exit 1
+fi
 if [ ! -f "$CANONICAL_PATH_PLAN" ] || \
    ! grep -Fq "Status: Completed" "$CANONICAL_PATH_PLAN" || \
    ! grep -Fq "make check" "$CANONICAL_PATH_PLAN" || \
@@ -1263,6 +1272,90 @@ if ! tr '\n' ' ' < "$ROOT_DIR/AGENTS.md" | tr -s '[:space:]' ' ' | grep -Fq 'rel
   printf '%s\n' "Wear launch failure replay rollback documentation is incomplete." >&2
   exit 1
 fi
+for rate_limiter_contract in \
+  'final class MessageDeliveryRateLimiter' \
+  'new LinkedHashMap<String, Long>()' \
+  'maxSources <= 0 || minIntervalMillis <= 0L' \
+  'nowMillis < previousDelivery.longValue()' \
+  'nowMillis - previousDelivery.longValue() < minIntervalMillis' \
+  'acceptedDeliveries.remove(source);' \
+  'while (acceptedDeliveries.size() > maxSources)' \
+  'acceptedDelivery.longValue() != acceptedAtMillis'; do
+  if ! grep -Fq "$rate_limiter_contract" "$DELIVERY_RATE_LIMITER"; then
+    printf '%s\n' "Wear delivery rate limiter contract changed: $rate_limiter_contract" >&2
+    exit 1
+  fi
+done
+for rate_listener_contract in \
+  'MAX_RATE_LIMITED_SOURCES = 100' \
+  'MIN_DELIVERY_INTERVAL_MILLIS = 500L' \
+  'SystemClock.elapsedRealtime()' \
+  'deliveryRateLimiter.allow(sourceNodeId, acceptedAtMillis)' \
+  'deliveryRateLimiter.forget(sourceNodeId, acceptedAtMillis)'; do
+  if ! grep -Fq "$rate_listener_contract" "$WEAR_SERVICE"; then
+    printf '%s\n' "Wear listener rate-limit integration changed: $rate_listener_contract" >&2
+    exit 1
+  fi
+done
+rate_replay_line=$(grep -nF 'recentMessageIds.record(sourceNodeId, requestId)' "$WEAR_SERVICE" | cut -d: -f1)
+rate_allow_line=$(grep -nF 'deliveryRateLimiter.allow(sourceNodeId, acceptedAtMillis)' "$WEAR_SERVICE" | cut -d: -f1)
+rate_launch_line=$(grep -nF 'if (!startWearActivity(message))' "$WEAR_SERVICE" | cut -d: -f1)
+if [ -z "$rate_replay_line" ] || [ -z "$rate_allow_line" ] || [ -z "$rate_launch_line" ] || \
+   [ "$rate_replay_line" -ge "$rate_allow_line" ] || [ "$rate_allow_line" -ge "$rate_launch_line" ]; then
+  printf '%s\n' "Wear listener must apply replay and rate admission before activity launch." >&2
+  exit 1
+fi
+for rate_test_contract in \
+  'acceptsFirstDeliveryAndCooldownBoundary' \
+  'rejectedDeliveryDoesNotMoveWindow' \
+  'keepsSourceWindowsIndependent' \
+  'rejectsBackwardTimeWithoutCorruptingState' \
+  'exactRollbackPermitsRetry' \
+  'staleRollbackCannotClearNewerReservation' \
+  'evictsOldestSourceAtCapacity' \
+  'Wear delivery rate limiter tests passed: '; do
+  if ! grep -Fq "$rate_test_contract" "$DELIVERY_RATE_HOST_TEST"; then
+    printf '%s\n' "Portable Wear delivery rate coverage is missing: $rate_test_contract" >&2
+    exit 1
+  fi
+done
+for rate_runner_contract in \
+  'MessageDeliveryRateLimiter.java' \
+  'MessageDeliveryRateLimiterHostTest.java' \
+  'trap cleanup EXIT' \
+  'rm -rf -- "$OUTPUT_DIR"'; do
+  if ! grep -Fq "$rate_runner_contract" "$DELIVERY_RATE_HOST_RUNNER"; then
+    printf '%s\n' "Portable Wear delivery rate runner changed: $rate_runner_contract" >&2
+    exit 1
+  fi
+done
+for rate_unit_contract in \
+  'enforcesPerSourceCooldownWithoutMovingRejectedWindow' \
+  'rejectsInvalidAndBackwardTimeWithoutCorruptingState' \
+  'exactRollbackCannotClearNewerReservation' \
+  'evictsOldestSourceAtCapacity'; do
+  if ! grep -Fq "$rate_unit_contract" "$DELIVERY_RATE_LIMITER_TEST"; then
+    printf '%s\n' "Wear delivery rate unit coverage is missing: $rate_unit_contract" >&2
+    exit 1
+  fi
+done
+for rate_plan_contract in \
+  'status: completed' \
+  'SystemClock.elapsedRealtime()' \
+  'make check' \
+  'mutations' \
+  '## Verification Results'; do
+  if ! grep -Fq "$rate_plan_contract" "$DELIVERY_RATE_LIMIT_PLAN"; then
+    printf '%s\n' "Wear listener rate-limit plan must record completed verification: $rate_plan_contract" >&2
+    exit 1
+  fi
+done
+for rate_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq 'Incoming Wear activity launches are limited per source node with a bounded monotonic in-process cooldown.' "$ROOT_DIR/$rate_doc"; then
+    printf '%s\n' "$rate_doc must document the Wear listener launch rate limit." >&2
+    exit 1
+  fi
+done
 if [ "$(grep -Fc 'startActivity(intent);' "$WEAR_SERVICE")" -ne 1 ] || \
    [ "$(grep -Fc 'catch (ActivityNotFoundException ignored)' "$WEAR_SERVICE")" -ne 1 ] || \
    [ "$(grep -Fc 'catch (SecurityException ignored)' "$WEAR_SERVICE")" -ne 1 ]; then
