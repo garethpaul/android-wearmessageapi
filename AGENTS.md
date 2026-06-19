@@ -66,6 +66,7 @@
 - Failed Wear activity launches must release only their matching replay
   reservation so a later valid redelivery can retry.
 - Incoming Wear activity launches are limited per source node with a bounded monotonic in-process cooldown.
+- Replay and rate-limit admission are owned by one atomic delivery gate; rate rejection and launch failure must release only their exact pending reservation, while in-flight identities remain pinned across bounded-cache eviction.
 - Keep PNG crunching and AGP 1.1.0's queued implementation disabled in both
   modules; pinned Play Services nine-patches must still pass AAPT packaging
   and assembly.

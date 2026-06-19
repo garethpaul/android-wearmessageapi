@@ -47,6 +47,9 @@ Helpful reports include:
 - Contained launch failures release only the matching replay reservation so
   redelivery can retry without clearing unrelated duplicate protection.
 - Incoming Wear activity launches are limited per source node with a bounded monotonic in-process cooldown.
+- Replay and rate-limit state are reserved atomically. Rejected rate admission
+  cannot mark an undelivered request as replayed, and only the current pending
+  launch token can roll its reservation back.
 - Hosted checkout credentials are not persisted. Repository-wide CODEOWNERS
   and focused baseline checks cover CI, Gradle, wrapper, and module boundaries;
   repository rules should require owner approval and `Check / check`.

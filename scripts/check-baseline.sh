@@ -37,6 +37,11 @@ DELIVERY_RATE_LIMITER="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/Messag
 DELIVERY_RATE_LIMITER_TEST="$ROOT_DIR/wear/src/test/java/garethpaul/com/wearer/MessageDeliveryRateLimiterTest.java"
 DELIVERY_RATE_HOST_TEST="$ROOT_DIR/scripts/MessageDeliveryRateLimiterHostTest.java"
 DELIVERY_RATE_HOST_RUNNER="$ROOT_DIR/scripts/test-wear-delivery-rate-limiter.sh"
+DELIVERY_GATE="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/MessageDeliveryGate.java"
+DELIVERY_GATE_TEST="$ROOT_DIR/wear/src/test/java/garethpaul/com/wearer/MessageDeliveryGateTest.java"
+DELIVERY_GATE_HOST_TEST="$ROOT_DIR/scripts/MessageDeliveryGateHostTest.java"
+DELIVERY_GATE_HOST_RUNNER="$ROOT_DIR/scripts/test-wear-delivery-gate.sh"
+DELIVERY_GATE_MUTATION_RUNNER="$ROOT_DIR/scripts/test-wear-delivery-gate-mutations.sh"
 PATH_HOST_TEST="$ROOT_DIR/scripts/WearMessagePathHostTest.java"
 PATH_HOST_RUNNER="$ROOT_DIR/scripts/test-wear-message-paths.sh"
 CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
@@ -1122,7 +1127,7 @@ for replay_contract in \
 done
 
 for listener_replay_contract in \
-  "new WearMessage.RecentMessageIds(WearMessage.MAX_RECENT_MESSAGE_IDS)" \
+  "new MessageDeliveryGate(" \
   "String sourceNodeId = messageEvent.getSourceNodeId();" \
   "int requestId = messageEvent.getRequestId();"; do
   if ! grep -Fq "$listener_replay_contract" "$WEAR_SERVICE"; then
@@ -1211,6 +1216,11 @@ if [ "$(grep -Fc '$(ROOT)scripts/test-wear-delivery-rate-limiter.sh' "$ROOT_DIR/
   printf '%s\n' "Make test must run the Wear delivery rate limiter tests exactly once." >&2
   exit 1
 fi
+if [ "$(grep -Fc '$(ROOT)scripts/test-wear-delivery-gate.sh' "$ROOT_DIR/Makefile")" -ne 1 ] || \
+   [ "$(grep -Fc '$(ROOT)scripts/test-wear-delivery-gate-mutations.sh' "$ROOT_DIR/Makefile")" -ne 1 ]; then
+  printf '%s\n' "Make test must run the Wear delivery gate and hostile mutation tests exactly once." >&2
+  exit 1
+fi
 if [ ! -f "$CANONICAL_PATH_PLAN" ] || \
    ! grep -Fq "Status: Completed" "$CANONICAL_PATH_PLAN" || \
    ! grep -Fq "make check" "$CANONICAL_PATH_PLAN" || \
@@ -1239,12 +1249,12 @@ for rollback_contract in \
   'synchronized boolean forget(String sourceNodeId, int requestId)' \
   'return identities.remove(normalizedSourceNodeId + "\n" + requestId);' \
   'private void deliverOnce(MessageEvent messageEvent, String message)' \
-  'if (!recentMessageIds.record(sourceNodeId, requestId))' \
-  'if (!startWearActivity(message))' \
-  'recentMessageIds.forget(sourceNodeId, requestId);' \
+  'deliveryGate.reserve(sourceNodeId, requestId, acceptedAtMillis)' \
+  'if (startWearActivity(message))' \
+  'deliveryGate.release(reservation);' \
   'deliverOnce(messageEvent, null);' \
   'deliverOnce(messageEvent, message);'; do
-  if ! grep -Fq "$rollback_contract" "$WEAR_MESSAGE" "$WEAR_SERVICE"; then
+  if ! grep -Fq "$rollback_contract" "$WEAR_MESSAGE" "$WEAR_SERVICE" "$DELIVERY_GATE"; then
     printf '%s\n' "Wear listener launch failure replay rollback changed: $rollback_contract" >&2
     exit 1
   fi
@@ -1290,21 +1300,88 @@ for rate_listener_contract in \
   'MAX_RATE_LIMITED_SOURCES = 100' \
   'MIN_DELIVERY_INTERVAL_MILLIS = 500L' \
   'SystemClock.elapsedRealtime()' \
-  'deliveryRateLimiter.allow(sourceNodeId, acceptedAtMillis)' \
-  'deliveryRateLimiter.forget(sourceNodeId, acceptedAtMillis)'; do
+  'deliveryGate.reserve(sourceNodeId, requestId, acceptedAtMillis)' \
+  'deliveryGate.commit(reservation)' \
+  'deliveryGate.release(reservation)'; do
   if ! grep -Fq "$rate_listener_contract" "$WEAR_SERVICE"; then
     printf '%s\n' "Wear listener rate-limit integration changed: $rate_listener_contract" >&2
     exit 1
   fi
 done
-rate_replay_line=$(grep -nF 'recentMessageIds.record(sourceNodeId, requestId)' "$WEAR_SERVICE" | cut -d: -f1)
-rate_allow_line=$(grep -nF 'deliveryRateLimiter.allow(sourceNodeId, acceptedAtMillis)' "$WEAR_SERVICE" | cut -d: -f1)
-rate_launch_line=$(grep -nF 'if (!startWearActivity(message))' "$WEAR_SERVICE" | cut -d: -f1)
-if [ -z "$rate_replay_line" ] || [ -z "$rate_allow_line" ] || [ -z "$rate_launch_line" ] || \
-   [ "$rate_replay_line" -ge "$rate_allow_line" ] || [ "$rate_allow_line" -ge "$rate_launch_line" ]; then
-  printf '%s\n' "Wear listener must apply replay and rate admission before activity launch." >&2
+rate_reserve_line=$(grep -nF 'deliveryGate.reserve(sourceNodeId, requestId, acceptedAtMillis)' "$WEAR_SERVICE" | cut -d: -f1)
+rate_launch_line=$(grep -nF 'if (startWearActivity(message))' "$WEAR_SERVICE" | cut -d: -f1)
+rate_commit_line=$(grep -nF 'deliveryGate.commit(reservation)' "$WEAR_SERVICE" | cut -d: -f1)
+rate_release_line=$(grep -nF 'deliveryGate.release(reservation)' "$WEAR_SERVICE" | cut -d: -f1)
+if [ -z "$rate_reserve_line" ] || [ -z "$rate_launch_line" ] || \
+   [ -z "$rate_commit_line" ] || [ -z "$rate_release_line" ] || \
+   [ "$rate_reserve_line" -ge "$rate_launch_line" ] || \
+   [ "$rate_launch_line" -ge "$rate_commit_line" ] || \
+   [ "$rate_commit_line" -ge "$rate_release_line" ]; then
+  printf '%s\n' "Wear listener must reserve before launch and commit or release afterward." >&2
   exit 1
 fi
+if grep -Fq 'recentMessageIds' "$WEAR_SERVICE" || \
+   grep -Fq 'deliveryRateLimiter' "$WEAR_SERVICE"; then
+  printf '%s\n' "Wear listener must not mutate replay and rate-limit state outside the atomic gate." >&2
+  exit 1
+fi
+for delivery_gate_contract in \
+  'final class MessageDeliveryGate' \
+  'synchronized Reservation reserve' \
+  'recentMessageIds.record(sourceNodeId, requestId)' \
+  'recentMessageIds.forget(sourceNodeId, requestId)' \
+  'deliveryRateLimiter.allow(sourceNodeId, acceptedAtMillis)' \
+  'pendingReservations.containsKey(identity)' \
+  'pendingReservations.get(identity) != reservation' \
+  'synchronized boolean commit' \
+  'synchronized boolean release'; do
+  if ! grep -Fq "$delivery_gate_contract" "$DELIVERY_GATE"; then
+    printf '%s\n' "Wear delivery gate contract changed: $delivery_gate_contract" >&2
+    exit 1
+  fi
+done
+for delivery_gate_test_contract in \
+  'rateLimitedRequestRemainsRetryable' \
+  'duplicateRequestDoesNotConsumeCooldown' \
+  'launchFailureReleasesExactReservation' \
+  'pendingRequestSurvivesReplayCacheEviction' \
+  'Message delivery gate tests passed: '; do
+  if ! grep -Fq "$delivery_gate_test_contract" "$DELIVERY_GATE_HOST_TEST"; then
+    printf '%s\n' "Portable Wear delivery gate coverage is missing: $delivery_gate_test_contract" >&2
+    exit 1
+  fi
+done
+for delivery_gate_unit_contract in \
+  'rateLimitedRequestRemainsRetryableAfterCooldown' \
+  'duplicateRequestDoesNotConsumeCooldown' \
+  'staleLaunchFailureCannotReleaseNewReservation' \
+  'pendingRequestSurvivesReplayCacheEviction'; do
+  if ! grep -Fq "$delivery_gate_unit_contract" "$DELIVERY_GATE_TEST"; then
+    printf '%s\n' "Wear delivery gate unit coverage is missing: $delivery_gate_unit_contract" >&2
+    exit 1
+  fi
+done
+for delivery_gate_runner_contract in \
+  'MessageDeliveryGate.java' \
+  'MessageDeliveryGateHostTest.java' \
+  'trap cleanup EXIT' \
+  'rm -rf -- "$OUTPUT_DIR"'; do
+  if ! grep -Fq "$delivery_gate_runner_contract" "$DELIVERY_GATE_HOST_RUNNER"; then
+    printf '%s\n' "Portable Wear delivery gate runner changed: $delivery_gate_runner_contract" >&2
+    exit 1
+  fi
+done
+for delivery_gate_mutation_contract in \
+  'replay-rollback' \
+  'rate-rollback' \
+  'stale-token' \
+  'pending-eviction' \
+  'Message delivery gate hostile mutations rejected: 4 cases.'; do
+  if ! grep -Fq "$delivery_gate_mutation_contract" "$DELIVERY_GATE_MUTATION_RUNNER"; then
+    printf '%s\n' "Wear delivery gate mutation coverage is missing: $delivery_gate_mutation_contract" >&2
+    exit 1
+  fi
+done
 for rate_test_contract in \
   'acceptsFirstDeliveryAndCooldownBoundary' \
   'rejectedDeliveryDoesNotMoveWindow' \

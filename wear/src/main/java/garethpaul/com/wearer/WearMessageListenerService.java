@@ -16,11 +16,10 @@ public class WearMessageListenerService extends WearableListenerService {
     private static final int MAX_RATE_LIMITED_SOURCES = 100;
     private static final long MIN_DELIVERY_INTERVAL_MILLIS = 500L;
 
-    private final WearMessage.RecentMessageIds recentMessageIds =
-            new WearMessage.RecentMessageIds(WearMessage.MAX_RECENT_MESSAGE_IDS);
-    private final MessageDeliveryRateLimiter deliveryRateLimiter =
-            new MessageDeliveryRateLimiter(
-                    MAX_RATE_LIMITED_SOURCES, MIN_DELIVERY_INTERVAL_MILLIS);
+    private final MessageDeliveryGate deliveryGate = new MessageDeliveryGate(
+            WearMessage.MAX_RECENT_MESSAGE_IDS,
+            MAX_RATE_LIMITED_SOURCES,
+            MIN_DELIVERY_INTERVAL_MILLIS);
 
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
@@ -47,18 +46,17 @@ public class WearMessageListenerService extends WearableListenerService {
     private void deliverOnce(MessageEvent messageEvent, String message) {
         String sourceNodeId = messageEvent.getSourceNodeId();
         int requestId = messageEvent.getRequestId();
-        if (!recentMessageIds.record(sourceNodeId, requestId)) {
-            return;
-        }
-
         long acceptedAtMillis = SystemClock.elapsedRealtime();
-        if (!deliveryRateLimiter.allow(sourceNodeId, acceptedAtMillis)) {
+        MessageDeliveryGate.Reservation reservation =
+                deliveryGate.reserve(sourceNodeId, requestId, acceptedAtMillis);
+        if (reservation == null) {
             return;
         }
 
-        if (!startWearActivity(message)) {
-            recentMessageIds.forget(sourceNodeId, requestId);
-            deliveryRateLimiter.forget(sourceNodeId, acceptedAtMillis);
+        if (startWearActivity(message)) {
+            deliveryGate.commit(reservation);
+        } else {
+            deliveryGate.release(reservation);
         }
     }
 

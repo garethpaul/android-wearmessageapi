@@ -131,6 +131,9 @@ explicit unexecuted rows.
   reservation, allowing a later valid redelivery to retry without weakening
   duplicate suppression for successful delivery.
 - Incoming Wear activity launches are limited per source node with a bounded monotonic in-process cooldown.
+- Replay and rate-limit admission use one atomic reservation gate. Rate-limited
+  requests remain retryable after cooldown, and pending launches stay pinned
+  even if the bounded completed-request cache evicts older entries.
 - The wear receiver decodes accepted message payloads before UI dispatch and
   ignores callbacks when the list adapter is unavailable.
 - The listener uses a single-pass strict payload decode over one captured byte

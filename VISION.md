@@ -26,6 +26,7 @@ Priority:
 - Keep documented listener launch failures isolated from message handling
 - Keep failed listener launches retryable through exact replay-state rollback
 - Incoming Wear activity launches are limited per source node with a bounded monotonic in-process cooldown.
+- Keep replay and rate-limit admission behind one atomic reservation boundary so rejected or stale callbacks cannot corrupt delivery state.
 - Require strict UTF-8 Wear payloads before replay state or UI delivery
 - Keep single-pass strict payload decode coupled to the exact delivered bytes
 - Wear listener rejects semantically blank payloads before replay recording or activity launch.

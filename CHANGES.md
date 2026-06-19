@@ -1,5 +1,10 @@
 # Android Wear Message API Changes
 
+- Made Wear replay and rate-limit admission atomic so throttled requests remain
+  retryable after cooldown and stale launch-failure callbacks cannot clear a
+  newer reservation.
+- Pinned in-flight source/request identities outside the bounded completed
+  replay cache, preventing cache eviction from reopening an active delivery.
 - The mobile explicit launcher export boundary is limited to .MainActivity and preserves its MAIN/LAUNCHER entry point.
 - The handset releases both Google API connection callback registrations before disconnecting during activity teardown.
 - The handset ignores queued Google API connection callbacks once its activity is finishing or destroyed.
