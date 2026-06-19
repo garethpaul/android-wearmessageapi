@@ -2,9 +2,9 @@
 
 ANDROID_HOME ?=
 ANDROID_SDK_ROOT ?=
-ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+override ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 ANDROID_SDK := $(if $(ANDROID_HOME),$(ANDROID_HOME),$(ANDROID_SDK_ROOT))
-GRADLE ?= $(ROOT)gradlew
+GRADLE ?= $(ROOT)scripts/verified-gradle.sh
 
 lint:
 	$(ROOT)scripts/check-baseline.sh
@@ -15,6 +15,10 @@ lint:
 	fi
 
 test:
+	$(ROOT)scripts/test-wear-message-paths.sh
+	$(ROOT)scripts/test-wear-delivery-rate-limiter.sh
+	$(ROOT)scripts/test-wear-delivery-gate.sh
+	$(ROOT)scripts/test-wear-delivery-gate-mutations.sh
 	@if [ -n "$(ANDROID_SDK)" ] && [ -d "$(ANDROID_SDK)" ]; then \
 		cd $(ROOT) && ANDROID_HOME="$(ANDROID_SDK)" ANDROID_SDK_ROOT="$(ANDROID_SDK)" $(GRADLE) test --no-daemon; \
 	else \

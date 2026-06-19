@@ -19,21 +19,40 @@ Priority:
 
 - Preserve the mobile-to-wear message flow and `/message` path behavior
 - Keep the watch activity launch path easy to inspect
-- Keep message path matching null-safe and case-insensitive across modules
+- Keep message path matching null-safe and exact across modules
 - Keep wear UI message rendering tolerant of late or malformed callbacks
 - Keep listener-service startup messages null-safe before path inspection
+- Keep recognized listener events guarded against malformed sources and replay
+- Keep documented listener launch failures isolated from message handling
+- Keep failed listener launches retryable through exact replay-state rollback
+- Incoming Wear activity launches are limited per source node with a bounded monotonic in-process cooldown.
+- Keep replay and rate-limit admission behind one atomic reservation boundary so rejected or stale callbacks cannot corrupt delivery state.
+- Require strict UTF-8 Wear payloads before replay state or UI delivery
+- Keep single-pass strict payload decode coupled to the exact delivered bytes
+- Wear listener rejects semantically blank payloads before replay recording or activity launch.
+- The mobile explicit launcher export boundary is limited to .MainActivity and preserves its MAIN/LAUNCHER entry point.
 - Preserve typed messages until at least one paired node accepts the send
 - Record outgoing history only after at least one paired node accepts the send
 - Preserve newer input edits when an earlier asynchronous send completes
 - Keep one mobile send in flight at a time and surface failed sends
 - Keep mobile send controls disabled unless the Wear client is connected
+- The handset releases both Google API connection callback registrations before disconnecting during activity teardown.
+- The handset ignores queued Google API connection callbacks once its activity is finishing or destroyed.
 - Keep mobile sends guarded when connected-node data is incomplete
 - Keep blank or whitespace-only mobile messages from being sent
 - Keep mobile and wear startup view binding checked before connecting Wear APIs
 - Keep root lint, test, and build gates wired to the two-module Gradle project
 - Keep the SDK-free `make check` baseline running in GitHub Actions
+- Keep the legacy Gradle runtime behind both the verified Make launcher and a
+  checksum-verified direct wrapper
+- Keep resource packaging deterministic by disabling PNG crunching and AGP
+  1.1.0's queued implementation in both modules without skipping AAPT or
+  assembly
 - Avoid changing Google Play services dependencies without documenting impact
 - Maintain the two-module project structure
+- Keep exact-commit Wear Message device verification matrix evidence separate
+  from portable checks, with unexecuted mobile, Wear, Data Layer, and UI rows
+  explicit
 
 Next priorities:
 
@@ -41,6 +60,8 @@ Next priorities:
 - Add tests or manual verification notes for message send/receive behavior
 - Update Gradle, SDK levels, and wearable APIs in a dedicated pass
 - Document device or emulator pairing requirements
+- Execute the paired-device verification matrix with synthetic payloads and
+  privacy-safe transport, replay, launch, and lifecycle evidence
 
 Contribution rules:
 
