@@ -1249,7 +1249,7 @@ for rollback_contract in \
   'synchronized boolean forget(String sourceNodeId, int requestId)' \
   'return identities.remove(normalizedSourceNodeId + "\n" + requestId);' \
   'private void deliverOnce(MessageEvent messageEvent, String message)' \
-  'deliveryGate.reserve(sourceNodeId, requestId, acceptedAtMillis)' \
+  'sourceNodeId, messageEvent.getPath(), requestId, acceptedAtMillis)' \
   'if (startWearActivity(message))' \
   'deliveryGate.release(reservation);' \
   'deliverOnce(messageEvent, null);' \
@@ -1297,10 +1297,9 @@ for rate_limiter_contract in \
   fi
 done
 for rate_listener_contract in \
-  'MAX_RATE_LIMITED_SOURCES = 100' \
+  'MAX_RATE_LIMITED_LANES = 100' \
   'MIN_DELIVERY_INTERVAL_MILLIS = 500L' \
   'SystemClock.elapsedRealtime()' \
-  'deliveryGate.reserve(sourceNodeId, requestId, acceptedAtMillis)' \
   'deliveryGate.commit(reservation)' \
   'deliveryGate.release(reservation)'; do
   if ! grep -Fq "$rate_listener_contract" "$WEAR_SERVICE"; then
@@ -1308,7 +1307,12 @@ for rate_listener_contract in \
     exit 1
   fi
 done
-rate_reserve_line=$(grep -nF 'deliveryGate.reserve(sourceNodeId, requestId, acceptedAtMillis)' "$WEAR_SERVICE" | cut -d: -f1)
+if ! tr '\n' ' ' < "$WEAR_SERVICE" | tr -s '[:space:]' ' ' | \
+   grep -Fq 'deliveryGate.reserve( sourceNodeId, messageEvent.getPath(), requestId, acceptedAtMillis)'; then
+  printf '%s\n' 'Wear listener must pass the canonical path into rate-limit admission.' >&2
+  exit 1
+fi
+rate_reserve_line=$(grep -nF 'MessageDeliveryGate.Reservation reservation = deliveryGate.reserve(' "$WEAR_SERVICE" | cut -d: -f1)
 rate_launch_line=$(grep -nF 'if (startWearActivity(message))' "$WEAR_SERVICE" | cut -d: -f1)
 rate_commit_line=$(grep -nF 'deliveryGate.commit(reservation)' "$WEAR_SERVICE" | cut -d: -f1)
 rate_release_line=$(grep -nF 'deliveryGate.release(reservation)' "$WEAR_SERVICE" | cut -d: -f1)
@@ -1330,7 +1334,8 @@ for delivery_gate_contract in \
   'synchronized Reservation reserve' \
   'recentMessageIds.record(sourceNodeId, requestId)' \
   'recentMessageIds.forget(sourceNodeId, requestId)' \
-  'deliveryRateLimiter.allow(sourceNodeId, acceptedAtMillis)' \
+  'cooldownIdentity(normalizedSourceNodeId, canonicalPath)' \
+  'cooldownIdentity(reservation.sourceNodeId, reservation.canonicalPath)' \
   'pendingReservations.containsKey(identity)' \
   'pendingReservations.get(identity) != reservation' \
   'synchronized boolean commit' \
@@ -1376,7 +1381,12 @@ for delivery_gate_mutation_contract in \
   'rate-rollback' \
   'stale-token' \
   'pending-eviction' \
-  'Message delivery gate hostile mutations rejected: 4 cases.'; do
+  'source-only-cooldown-key' \
+  'disabled-rate-limit' \
+  'cross-source-cooldown' \
+  'path-alias' \
+  'replay-bypass' \
+  'Message delivery gate hostile mutations rejected: 9 cases.'; do
   if ! grep -Fq "$delivery_gate_mutation_contract" "$DELIVERY_GATE_MUTATION_RUNNER"; then
     printf '%s\n' "Wear delivery gate mutation coverage is missing: $delivery_gate_mutation_contract" >&2
     exit 1
@@ -1428,7 +1438,11 @@ for rate_plan_contract in \
   fi
 done
 for rate_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
-  if ! grep -Fq 'Incoming Wear activity launches are limited per source node with a bounded monotonic in-process cooldown.' "$ROOT_DIR/$rate_doc"; then
+  rate_doc_contract='Incoming Wear activity launches are limited per source node with a bounded monotonic in-process cooldown.'
+  if [ "$rate_doc" = README.md ]; then
+    rate_doc_contract='Incoming Wear activity launches use bounded monotonic in-process cooldown'
+  fi
+  if ! grep -Fq "$rate_doc_contract" "$ROOT_DIR/$rate_doc"; then
     printf '%s\n' "$rate_doc must document the Wear listener launch rate limit." >&2
     exit 1
   fi

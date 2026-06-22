@@ -11,6 +11,11 @@ cleanup() {
 trap cleanup EXIT
 trap 'cleanup; exit 1' HUP INT TERM
 
+if ! javac -version >/dev/null 2>&1 || ! java -version >/dev/null 2>&1; then
+  printf '%s\n' 'Java runtime unavailable; delivery gate Java mutations not run.' >&2
+  exit 2
+fi
+
 run_mutation() {
   name=$1
   old=$2
@@ -58,5 +63,20 @@ run_mutation stale-token \
 run_mutation pending-eviction \
   '        if (pendingReservations.containsKey(identity)) {' \
   '        if (false && pendingReservations.containsKey(identity)) {'
+run_mutation source-only-cooldown-key \
+  'cooldownIdentity(normalizedSourceNodeId, canonicalPath)' \
+  'normalizedSourceNodeId'
+run_mutation disabled-rate-limit \
+  '        if (!deliveryRateLimiter.allow(' \
+  '        if (false && !deliveryRateLimiter.allow('
+run_mutation cross-source-cooldown \
+  '        return sourceNodeId + "\n" + canonicalPath;' \
+  '        return canonicalPath;'
+run_mutation path-alias \
+  '        if (WearMessage.isWearMessagePath(messagePath)) {' \
+  '        if (WearMessage.isWearMessagePath(messagePath) || "/MESSAGE".equals(messagePath)) {'
+run_mutation replay-bypass \
+  '        if (!recentMessageIds.record(sourceNodeId, requestId)) {' \
+  '        if (false && !recentMessageIds.record(sourceNodeId, requestId)) {'
 
-printf '%s\n' 'Message delivery gate hostile mutations rejected: 4 cases.'
+printf '%s\n' 'Message delivery gate hostile mutations rejected: 9 cases.'

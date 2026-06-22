@@ -15,6 +15,8 @@ lint:
 	fi
 
 test:
+	$(ROOT)scripts/test-wear-mixed-path-cooldown-contract.sh
+	$(ROOT)scripts/test-wear-mixed-path-source-mutations.sh
 	$(ROOT)scripts/test-wear-message-paths.sh
 	$(ROOT)scripts/test-wear-delivery-rate-limiter.sh
 	$(ROOT)scripts/test-wear-delivery-gate.sh
