@@ -9,15 +9,21 @@ final class MessageDeliveryGate {
     private final Map<String, Reservation> pendingReservations =
             new HashMap<String, Reservation>();
 
-    MessageDeliveryGate(int maxRecentMessageIds, int maxRateLimitedSources,
+    MessageDeliveryGate(int maxRecentMessageIds, int maxRateLimitedLanes,
             long minDeliveryIntervalMillis) {
         recentMessageIds = new WearMessage.RecentMessageIds(maxRecentMessageIds);
         deliveryRateLimiter = new MessageDeliveryRateLimiter(
-                maxRateLimitedSources, minDeliveryIntervalMillis);
+                maxRateLimitedLanes, minDeliveryIntervalMillis);
     }
 
-    synchronized Reservation reserve(String sourceNodeId, int requestId, long acceptedAtMillis) {
+    synchronized Reservation reserve(String sourceNodeId, String messagePath, int requestId,
+            long acceptedAtMillis) {
         String normalizedSourceNodeId = WearMessage.normalizeText(sourceNodeId);
+        String canonicalPath = canonicalPath(messagePath);
+        if (canonicalPath.length() == 0) {
+            return null;
+        }
+
         String identity = identity(normalizedSourceNodeId, requestId);
         if (pendingReservations.containsKey(identity)) {
             return null;
@@ -27,13 +33,14 @@ final class MessageDeliveryGate {
             return null;
         }
 
-        if (!deliveryRateLimiter.allow(sourceNodeId, acceptedAtMillis)) {
+        if (!deliveryRateLimiter.allow(
+                cooldownIdentity(normalizedSourceNodeId, canonicalPath), acceptedAtMillis)) {
             recentMessageIds.forget(sourceNodeId, requestId);
             return null;
         }
 
         Reservation reservation = new Reservation(
-                normalizedSourceNodeId, requestId, acceptedAtMillis);
+                normalizedSourceNodeId, canonicalPath, requestId, acceptedAtMillis);
         pendingReservations.put(identity, reservation);
         return reservation;
     }
@@ -48,7 +55,8 @@ final class MessageDeliveryGate {
         }
 
         boolean releasedRateLimit = deliveryRateLimiter.forget(
-                reservation.sourceNodeId, reservation.acceptedAtMillis);
+                cooldownIdentity(reservation.sourceNodeId, reservation.canonicalPath),
+                reservation.acceptedAtMillis);
         boolean releasedReplay = recentMessageIds.forget(
                 reservation.sourceNodeId, reservation.requestId);
         return releasedRateLimit && releasedReplay;
@@ -71,13 +79,30 @@ final class MessageDeliveryGate {
         return sourceNodeId + "\n" + requestId;
     }
 
+    private static String cooldownIdentity(String sourceNodeId, String canonicalPath) {
+        return sourceNodeId + "\n" + canonicalPath;
+    }
+
+    private static String canonicalPath(String messagePath) {
+        if (WearMessage.isStartActivityPath(messagePath)) {
+            return WearMessage.START_ACTIVITY;
+        }
+        if (WearMessage.isWearMessagePath(messagePath)) {
+            return WearMessage.WEAR_MESSAGE_PATH;
+        }
+        return "";
+    }
+
     static final class Reservation {
         private final String sourceNodeId;
+        private final String canonicalPath;
         private final int requestId;
         private final long acceptedAtMillis;
 
-        private Reservation(String sourceNodeId, int requestId, long acceptedAtMillis) {
+        private Reservation(String sourceNodeId, String canonicalPath, int requestId,
+                long acceptedAtMillis) {
             this.sourceNodeId = sourceNodeId;
+            this.canonicalPath = canonicalPath;
             this.requestId = requestId;
             this.acceptedAtMillis = acceptedAtMillis;
         }

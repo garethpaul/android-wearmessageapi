@@ -1,5 +1,13 @@
 # Android Wear Message API Changes
 
+## 2026-06-25
+
+- Separated delivery cooldown lanes by source node and exact canonical path so
+  startup and message events do not throttle each other while replay identity
+  remains shared by source and request ID.
+- Revalidated mixed-path ordering, rollback, replay, source isolation, bounded
+  lane eviction, and hostile mutations with an independent Codex review.
+
 - Made Wear replay and rate-limit admission atomic so throttled requests remain
   retryable after cooldown and stale launch-failure callbacks cannot clear a
   newer reservation.

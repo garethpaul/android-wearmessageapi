@@ -9,35 +9,65 @@ import static org.junit.Assert.assertTrue;
 
 public class MessageDeliveryGateTest {
     @Test
-    public void rateLimitedRequestRemainsRetryableAfterCooldown() {
+    public void canonicalPathsUseSeparateCooldownLanes() {
         MessageDeliveryGate gate = gate();
-        MessageDeliveryGate.Reservation first = gate.reserve("node-a", 1, 1000L);
+
+        assertNotNull(gate.reserve("node-a", WearMessage.START_ACTIVITY, 1, 1000L));
+        assertNotNull(gate.reserve("node-a", WearMessage.WEAR_MESSAGE_PATH, 2, 1001L));
+    }
+
+    @Test
+    public void sameCanonicalPathRemainsRateLimited() {
+        MessageDeliveryGate gate = gate();
+
+        assertNotNull(gate.reserve("node-a", WearMessage.WEAR_MESSAGE_PATH, 1, 1000L));
+        assertNull(gate.reserve("node-a", WearMessage.WEAR_MESSAGE_PATH, 2, 1001L));
+    }
+
+    @Test
+    public void replayIdentityRemainsIndependentOfPath() {
+        MessageDeliveryGate gate = gate();
+        MessageDeliveryGate.Reservation first = gate.reserve(
+                "node-a", WearMessage.START_ACTIVITY, 1, 1000L);
 
         assertNotNull(first);
         assertTrue(gate.commit(first));
-        assertNull(gate.reserve("node-a", 2, 1001L));
-        assertNotNull(gate.reserve("node-a", 2, 1500L));
+        assertNull(gate.reserve("node-a", WearMessage.WEAR_MESSAGE_PATH, 1, 1500L));
+    }
+
+    @Test
+    public void rateLimitedRequestRemainsRetryableAfterCooldown() {
+        MessageDeliveryGate gate = gate();
+        MessageDeliveryGate.Reservation first = gate.reserve(
+                "node-a", WearMessage.WEAR_MESSAGE_PATH, 1, 1000L);
+
+        assertNotNull(first);
+        assertTrue(gate.commit(first));
+        assertNull(gate.reserve("node-a", WearMessage.WEAR_MESSAGE_PATH, 2, 1001L));
+        assertNotNull(gate.reserve("node-a", WearMessage.WEAR_MESSAGE_PATH, 2, 1500L));
     }
 
     @Test
     public void duplicateRequestDoesNotConsumeCooldown() {
         MessageDeliveryGate gate = gate();
-        MessageDeliveryGate.Reservation first = gate.reserve("node-a", 1, 1000L);
+        MessageDeliveryGate.Reservation first = gate.reserve(
+                "node-a", WearMessage.WEAR_MESSAGE_PATH, 1, 1000L);
 
         assertNotNull(first);
         assertTrue(gate.commit(first));
-        assertNull(gate.reserve("node-a", 1, 1500L));
-        assertNotNull(gate.reserve("node-a", 2, 1500L));
+        assertNull(gate.reserve("node-a", WearMessage.WEAR_MESSAGE_PATH, 1, 1500L));
+        assertNotNull(gate.reserve("node-a", WearMessage.WEAR_MESSAGE_PATH, 2, 1500L));
     }
 
     @Test
     public void staleLaunchFailureCannotReleaseNewReservation() {
         MessageDeliveryGate gate = gate();
-        MessageDeliveryGate.Reservation first = gate.reserve("node-a", 1, 1000L);
+        MessageDeliveryGate.Reservation first = gate.reserve(
+                "node-a", WearMessage.WEAR_MESSAGE_PATH, 1, 1000L);
 
         assertNotNull(first);
         assertTrue(gate.release(first));
-        assertNotNull(gate.reserve("node-a", 1, 1000L));
+        assertNotNull(gate.reserve("node-a", WearMessage.WEAR_MESSAGE_PATH, 1, 1000L));
         assertFalse(gate.release(first));
     }
 
@@ -45,9 +75,9 @@ public class MessageDeliveryGateTest {
     public void pendingRequestSurvivesReplayCacheEviction() {
         MessageDeliveryGate gate = new MessageDeliveryGate(1, 100, 500L);
 
-        assertNotNull(gate.reserve("node-a", 1, 1000L));
-        assertNotNull(gate.reserve("node-b", 1, 1000L));
-        assertNull(gate.reserve("node-a", 1, 1500L));
+        assertNotNull(gate.reserve("node-a", WearMessage.START_ACTIVITY, 1, 1000L));
+        assertNotNull(gate.reserve("node-b", WearMessage.WEAR_MESSAGE_PATH, 1, 1000L));
+        assertNull(gate.reserve("node-a", WearMessage.WEAR_MESSAGE_PATH, 1, 1500L));
     }
 
     private static MessageDeliveryGate gate() {

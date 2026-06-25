@@ -13,12 +13,12 @@ import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.WearableListenerService;
 
 public class WearMessageListenerService extends WearableListenerService {
-    private static final int MAX_RATE_LIMITED_SOURCES = 100;
+    private static final int MAX_RATE_LIMITED_LANES = 100;
     private static final long MIN_DELIVERY_INTERVAL_MILLIS = 500L;
 
     private final MessageDeliveryGate deliveryGate = new MessageDeliveryGate(
             WearMessage.MAX_RECENT_MESSAGE_IDS,
-            MAX_RATE_LIMITED_SOURCES,
+            MAX_RATE_LIMITED_LANES,
             MIN_DELIVERY_INTERVAL_MILLIS);
 
     @Override
@@ -47,8 +47,8 @@ public class WearMessageListenerService extends WearableListenerService {
         String sourceNodeId = messageEvent.getSourceNodeId();
         int requestId = messageEvent.getRequestId();
         long acceptedAtMillis = SystemClock.elapsedRealtime();
-        MessageDeliveryGate.Reservation reservation =
-                deliveryGate.reserve(sourceNodeId, requestId, acceptedAtMillis);
+        MessageDeliveryGate.Reservation reservation = deliveryGate.reserve(
+                sourceNodeId, messageEvent.getPath(), requestId, acceptedAtMillis);
         if (reservation == null) {
             return;
         }
