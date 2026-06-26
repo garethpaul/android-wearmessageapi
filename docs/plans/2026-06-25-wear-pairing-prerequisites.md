@@ -59,10 +59,10 @@ mixed-path cooldown contract, five mixed-path source mutations, two eight-case
 canonical path runs, eight rate-limiter cases, thirteen delivery-gate cases,
 and nine existing delivery-gate hostile mutations.
 
-All eleven isolated documentation mutations were rejected for the intended
+All thirteen isolated documentation mutations were rejected for the intended
 reason across README identity, commit, connection, and synthetic-payload
-prerequisites; device-matrix setup; stale roadmap items; change history; plan
-status; and the runtime non-claim.
+prerequisites; README and matrix signing identity; device-matrix setup; stale
+roadmap items; change history; plan status; and the runtime non-claim.
 Three additional review mutations rejected removal of the signing-certificate
 requirement from the README, device matrix, and plan.
 
