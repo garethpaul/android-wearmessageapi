@@ -52,6 +52,30 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 
 - Use Android Studio to open the project or run `make build` when the Android SDK is configured.
 
+## Paired Device and Emulator Prerequisites
+
+Use the same exact commit for both modules. The mobile and Wear manifests share the
+application ID `garethpaul.com.wearer`, and the mobile build packages the Wear
+module through `wearApp project(':wear')`. Verify that the handset has the
+mobile app and the paired Wear device or emulator has the matching Wear app;
+the installation mechanism depends on the legacy companion or emulator flow.
+
+Before recording message behavior:
+
+1. Run `make check` with the documented Java 8, Android API 21, and build-tools
+   24.0.3 baseline.
+2. Pair the handset and Wear target through a platform-supported companion or
+   emulator flow with compatible Google Play services Data Layer support.
+3. Launch the matching apps and wait until the mobile `GoogleApiClient` reports
+   connected. A successful install alone is not connection evidence.
+4. Send only a synthetic payload through the canonical `/message` path and use
+   [`DEVICE_VERIFICATION.md`](DEVICE_VERIFICATION.md) to record sanitized
+   results without node IDs, serials, account names, or payload dumps.
+
+The mobile send control remains unavailable until the Wear API connection is
+live. A send still succeeds only when at least one paired node accepts the
+message; failed sends preserve typed text and do not create false history.
+
 ## Testing and Verification
 
 Run the root gate commands first:

@@ -56,12 +56,12 @@ Priority:
 
 Next priorities:
 
-- Pin or modernize dynamic Google Play services dependencies
-- Add tests or manual verification notes for message send/receive behavior
-- Update Gradle, SDK levels, and wearable APIs in a dedicated pass
-- Document device or emulator pairing requirements
 - Execute the paired-device verification matrix with synthetic payloads and
   privacy-safe transport, replay, launch, and lifecycle evidence
+- Evaluate the archival boundary for Google Play services wearable 7.0.0
+  before any dependency or Data Layer migration
+- Update Gradle, SDK levels, and wearable APIs only in a dedicated pass with
+  paired-device evidence
 
 Contribution rules:
 
