@@ -8,6 +8,10 @@
 - Repository and external-directory `make check`, shell syntax, and diff checks
   passed; isolated source and deadline-helper mutations failed as intended.
 - Android SDK, paired handset, and paired-Wear runtime checks remain unverified locally.
+- Exact-head Check run `28251310730` passed the SDK-backed gate in 1m15;
+  CodeQL run `28251308824` passed Actions and Java/Kotlin analysis.
+- Codex review was blocked before analysis by repeated OpenAI API HTTP 401
+  failures; immutable exact-head manual review found no actionable findings.
 
 ## 2026-06-25
 

@@ -24,3 +24,7 @@ Stop attempting additional nodes when the shared budget expires.
 - Android device and paired-Wear execution remain unverified locally.
 - Repository and external-directory `make check`, shell syntax, and diff checks passed.
 - Two isolated hostile mutations failed for the intended reason.
+- Exact-head Check run `28251310730` passed the SDK-backed gate; CodeQL run
+  `28251308824` passed Actions and Java/Kotlin analysis.
+- Codex review failed before analysis with OpenAI API HTTP 401; immutable
+  exact-head manual review found no actionable findings.
