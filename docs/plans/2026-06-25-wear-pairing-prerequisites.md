@@ -76,8 +76,9 @@ matching-signature prerequisite.
 Exact-head hosted Check and CodeQL passed. Check run `28219095518` provisioned
 the pinned Java 8 and Android API 21 toolchain and completed Gradle lint, unit
 tests, and debug assembly for both modules at reviewed commit
-`e94e9bee960430e33e2cd4bf76a787fe292b3dc7`. CodeQL run `28219093959`
-completed successfully. All thirteen isolated documentation mutations were rejected for the intended reason.
+`9a4500301322d2846db3931361b586e444bce711`. CodeQL run `28219093959`
+completed successfully. All fourteen isolated documentation mutations were
+rejected for the intended reason.
 
 ## Sources
 
