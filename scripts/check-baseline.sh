@@ -59,10 +59,12 @@ LISTENER_LAUNCH_FAILURE_PLAN="$ROOT_DIR/docs/plans/2026-06-14-wear-listener-laun
 LAUNCH_FAILURE_REPLAY_PLAN="$ROOT_DIR/docs/plans/2026-06-14-wear-launch-failure-replay-rollback.md"
 PNG_CRUNCHER_PLAN="$ROOT_DIR/docs/plans/2026-06-14-legacy-png-cruncher-stability.md"
 DEVICE_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-android-wearmessageapi-device-verification-checklist.md"
+DEVICE_VERIFICATION="$ROOT_DIR/DEVICE_VERIFICATION.md"
 MOBILE_LAUNCHER_EXPORT_PLAN="$ROOT_DIR/docs/plans/2026-06-15-wear-mobile-explicit-launcher-export.md"
 FAILURE_LISTENER_TEARDOWN_PLAN="$ROOT_DIR/docs/plans/2026-06-16-wear-mobile-failure-listener-teardown.md"
 CALLBACK_LIVENESS_PLAN="$ROOT_DIR/docs/plans/2026-06-16-wear-mobile-callback-liveness.md"
 DELIVERY_RATE_LIMIT_PLAN="$ROOT_DIR/docs/plans/2026-06-17-wear-listener-launch-rate-limit.md"
+PAIRING_PREREQUISITES_PLAN="$ROOT_DIR/docs/plans/2026-06-25-wear-pairing-prerequisites.md"
 
 require_sha256() {
   file=$1
@@ -1640,4 +1642,91 @@ if ! grep -Fq "docs/plans/2026-06-12-wear-mobile-send-timeouts.md" "$ROOT_DIR/RE
   printf '%s\n' "README must link the Wear send timeout plan." >&2
   exit 1
 fi
+
+for pairing_contract in \
+  "## Paired Device and Emulator Prerequisites" \
+  "garethpaul.com.wearer" \
+  "same exact commit" \
+  "same signing certificate" \
+  "GoogleApiClient" \
+  "synthetic payload"; do
+  if ! grep -Fq "$pairing_contract" "$README_FILE"; then
+    printf '%s\n' "README must retain paired-device prerequisite: $pairing_contract" >&2
+    exit 1
+  fi
+done
+
+for pairing_matrix_contract in \
+  "## Pairing Prerequisites" \
+  "same application ID" \
+  "matching signing certificate" \
+  "wearApp project(':wear')" \
+  "platform-supported companion or emulator flow" \
+  "Do not treat successful installation as Data Layer connection evidence."; do
+  if ! grep -Fq "$pairing_matrix_contract" "$DEVICE_VERIFICATION"; then
+    printf '%s\n' "Device verification must retain pairing prerequisite: $pairing_matrix_contract" >&2
+    exit 1
+  fi
+done
+
+for completed_priority in \
+  "Pin or modernize dynamic Google Play services dependencies" \
+  "Add tests or manual verification notes for message send/receive behavior" \
+  "Document device or emulator pairing requirements"; do
+  if grep -Fq "$completed_priority" "$VISION_FILE"; then
+    printf '%s\n' "VISION next priorities must not retain completed item: $completed_priority" >&2
+    exit 1
+  fi
+done
+
+for roadmap_contract in \
+  "Evaluate the archival boundary for Google Play services wearable 7.0.0" \
+  "Execute the paired-device verification matrix"; do
+  if ! grep -Fq "$roadmap_contract" "$VISION_FILE"; then
+    printf '%s\n' "VISION must retain current roadmap priority: $roadmap_contract" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq "paired-device prerequisites" "$CHANGES_FILE"; then
+  printf '%s\n' "CHANGES.md must record paired-device prerequisites." >&2
+  exit 1
+fi
+
+pairing_plan_status=$(sed -n 's/^status: //p' "$PAIRING_PREREQUISITES_PLAN")
+case "$pairing_plan_status" in
+  pending_hosted_verification)
+    if ! grep -Fq "Exact-head hosted checks remain pending." "$PAIRING_PREREQUISITES_PLAN"; then
+      printf '%s\n' "Pending pairing plan must record pending exact-head checks." >&2
+      exit 1
+    fi
+    ;;
+  completed)
+    for pairing_plan_contract in \
+      "Exact-head hosted Check and CodeQL passed." \
+      "isolated documentation mutations were rejected"; do
+      if ! grep -Fq "$pairing_plan_contract" "$PAIRING_PREREQUISITES_PLAN"; then
+        printf '%s\n' "Completed pairing plan must retain evidence: $pairing_plan_contract" >&2
+        exit 1
+      fi
+    done
+    ;;
+  *)
+    printf '%s\n' "Pairing plan must be pending hosted verification or completed." >&2
+    exit 1
+    ;;
+esac
+
+for pairing_plan_contract in \
+  "play-services-wearable 7.0.0" \
+  "garethpaul.com.wearer" \
+  "matching signing certificate" \
+  "GoogleApiClient" \
+  "make check" \
+  "No handset, Wear device, emulator pair, or live Data Layer connection was used"; do
+  if ! grep -Fq "$pairing_plan_contract" "$PAIRING_PREREQUISITES_PLAN"; then
+    printf '%s\n' "Pairing plan must retain local evidence: $pairing_plan_contract" >&2
+    exit 1
+  fi
+done
 printf '%s\n' "Android Wear Message API baseline checks passed."
