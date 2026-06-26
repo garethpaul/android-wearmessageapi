@@ -197,6 +197,8 @@ explicit unexecuted rows.
   results, and statuses before clearing input.
 - The mobile sender bounds node lookup and message delivery waits so stalled
   Wear transport operations fall back to the existing send-failure path.
+- Wear node lookup and per-node sends consume one shared five-second deadline,
+  preventing total sender-thread lifetime from scaling with connected-node count.
 - The mobile sender normalizes typed text and ignores whitespace-only messages
   before adding or sending them.
 - The mobile and wear activities validate required startup views before connecting

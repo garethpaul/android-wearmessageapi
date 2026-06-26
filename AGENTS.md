@@ -70,7 +70,9 @@
 - Keep PNG crunching and AGP 1.1.0's queued implementation disabled in both
   modules; pinned Play Services nine-patches must still pass AAPT packaging
   and assembly.
-- Keep connected-node lookup and every per-node message send bounded by the shared five-second timeout; do not restore unbounded `PendingResult.await()` calls.
+- Wear node lookup and per-node sends consume one shared five-second deadline;
+  do not restore a fresh timeout for each connected node or an unbounded
+  `PendingResult.await()` call.
 
 ## Agent workflow
 
