@@ -1,6 +1,6 @@
 # Document Wear Pairing Prerequisites
 
-status: pending_hosted_verification
+status: completed
 
 ## Context
 
@@ -71,7 +71,13 @@ were explicitly skipped. No handset, Wear device, emulator pair, or live Data La
 
 Initial implementation commit `3df5daaa8f180b06b7d55bc331c0477f795638f1`
 passed hosted Check and CodeQL. Review then added the required
-matching-signature prerequisite. Exact-head hosted checks remain pending.
+matching-signature prerequisite.
+
+Exact-head hosted Check and CodeQL passed. Check run `28219095518` provisioned
+the pinned Java 8 and Android API 21 toolchain and completed Gradle lint, unit
+tests, and debug assembly for both modules at reviewed commit
+`e94e9bee960430e33e2cd4bf76a787fe292b3dc7`. CodeQL run `28219093959`
+completed successfully. All thirteen isolated documentation mutations were rejected for the intended reason.
 
 ## Sources
 
