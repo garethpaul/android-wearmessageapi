@@ -17,6 +17,9 @@ GRADLEW_BAT="$ROOT_DIR/gradlew.bat"
 WRAPPER_JAR="$ROOT_DIR/gradle/wrapper/gradle-wrapper.jar"
 VERIFIED_GRADLE="$ROOT_DIR/scripts/verified-gradle.sh"
 MOBILE_ACTIVITY="$ROOT_DIR/mobile/src/main/java/garethpaul/com/wearer/MainActivity.java"
+MESSAGE_SEND_DEADLINE="$ROOT_DIR/mobile/src/main/java/garethpaul/com/wearer/MessageSendDeadline.java"
+MESSAGE_SEND_DEADLINE_HOST_TEST="$ROOT_DIR/scripts/MessageSendDeadlineHostTest.java"
+MESSAGE_SEND_DEADLINE_HOST_RUNNER="$ROOT_DIR/scripts/test-wear-message-send-deadline.sh"
 WEAR_ACTIVITY="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/MainActivity.java"
 WEAR_LAUNCHER="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/LauncherActivity.java"
 WEAR_SERVICE="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/WearMessageListenerService.java"
@@ -47,6 +50,7 @@ PATH_HOST_RUNNER="$ROOT_DIR/scripts/test-wear-message-paths.sh"
 CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 CODEOWNERS="$ROOT_DIR/.github/CODEOWNERS"
 SEND_TIMEOUT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-mobile-send-timeouts.md"
+SHARED_SEND_DEADLINE_PLAN="$ROOT_DIR/docs/plans/2026-06-26-wear-shared-message-send-deadline.md"
 HISTORY_LIMIT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-message-history-limit.md"
 LISTENER_EXPORT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-listener-export-contract.md"
 WRAPPER_PLAN="$ROOT_DIR/docs/plans/2026-06-12-gradle-wrapper-verification.md"
@@ -715,23 +719,28 @@ if ! grep -Fq "MessageApi.SendMessageResult result" "$MOBILE_ACTIVITY"; then
 fi
 
 for timeout_contract in \
-  "private static final long MESSAGE_OPERATION_TIMEOUT_SECONDS = 5L;" \
+  "private static final long MESSAGE_OPERATION_TIMEOUT_NANOS" \
   "import java.util.concurrent.TimeUnit;" \
-  ".await(MESSAGE_OPERATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)" \
-  "MESSAGE_OPERATION_TIMEOUT_SECONDS," \
-  "TimeUnit.SECONDS);"; do
+  "TimeUnit.SECONDS.toNanos(5L);" \
+  ".await(MESSAGE_OPERATION_TIMEOUT_NANOS, TimeUnit.NANOSECONDS)" \
+  "MessageSendDeadline.remainingNanos(" \
+  ".await(" \
+  "remainingNanos," \
+  "TimeUnit.NANOSECONDS);"; do
   if ! grep -Fq "$timeout_contract" "$MOBILE_ACTIVITY"; then
     printf '%s\n' "Mobile Wear operations must keep bounded wait contract: $timeout_contract" >&2
     exit 1
   fi
 done
 
-if [ "$(grep -Fc "private static final long MESSAGE_OPERATION_TIMEOUT_SECONDS = 5L;" "$MOBILE_ACTIVITY" || true)" -ne 1 ] || \
+if [ "$(grep -Fc "private static final long MESSAGE_OPERATION_TIMEOUT_NANOS" "$MOBILE_ACTIVITY" || true)" -ne 1 ] || \
    [ "$(grep -Fc "import java.util.concurrent.TimeUnit;" "$MOBILE_ACTIVITY" || true)" -ne 1 ] || \
    [ "$(grep -Ec '\.await[[:space:]]*\(' "$MOBILE_ACTIVITY" || true)" -ne 2 ] || \
-   [ "$(grep -Fc "MESSAGE_OPERATION_TIMEOUT_SECONDS" "$MOBILE_ACTIVITY" || true)" -ne 3 ] || \
-   [ "$(grep -Fc "TimeUnit.SECONDS" "$MOBILE_ACTIVITY" || true)" -ne 2 ]; then
-  printf '%s\n' "Mobile Wear node lookup and message send must each use the shared timeout exactly once." >&2
+   [ "$(grep -Fc "MESSAGE_OPERATION_TIMEOUT_NANOS" "$MOBILE_ACTIVITY" || true)" -ne 3 ] || \
+   [ "$(grep -Fc "TimeUnit.NANOSECONDS" "$MOBILE_ACTIVITY" || true)" -ne 2 ] || \
+   [ "$(grep -Fc "System.nanoTime()" "$MOBILE_ACTIVITY" || true)" -ne 2 ] || \
+   grep -Fq "MESSAGE_OPERATION_TIMEOUT_SECONDS" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile Wear node lookup and per-node sends must consume one shared deadline." >&2
   exit 1
 fi
 
@@ -746,6 +755,58 @@ if [ ! -f "$SEND_TIMEOUT_PLAN" ] || \
   printf '%s\n' "Wear mobile send timeout plan must record completed make check verification." >&2
   exit 1
 fi
+
+for deadline_path in \
+  "$MESSAGE_SEND_DEADLINE" \
+  "$MESSAGE_SEND_DEADLINE_HOST_TEST" \
+  "$MESSAGE_SEND_DEADLINE_HOST_RUNNER" \
+  "$SHARED_SEND_DEADLINE_PLAN"; do
+  if [ ! -f "$deadline_path" ]; then
+    printf '%s\n' "Shared Wear send deadline artifact is missing: $deadline_path" >&2
+    exit 1
+  fi
+done
+if [ ! -x "$MESSAGE_SEND_DEADLINE_HOST_RUNNER" ]; then
+  printf '%s\n' "Shared Wear send deadline host runner must remain executable." >&2
+  exit 1
+fi
+for deadline_contract in \
+  "static long remainingNanos" \
+  "if (timeoutNanos <= 0L)" \
+  "if (elapsedNanos >= timeoutNanos)" \
+  "return timeoutNanos - elapsedNanos;"; do
+  if ! grep -Fq "$deadline_contract" "$MESSAGE_SEND_DEADLINE"; then
+    printf '%s\n' "Shared Wear send deadline helper changed: $deadline_contract" >&2
+    exit 1
+  fi
+done
+for deadline_test_contract in \
+  "preservesFullBudgetAtStart" \
+  "subtractsElapsedTimeFromSharedBudget" \
+  "expiresAtAndBeyondDeadline" \
+  "rejectsNonPositiveTimeouts" \
+  "if (expected != actual)"; do
+  if ! grep -Fq "$deadline_test_contract" "$MESSAGE_SEND_DEADLINE_HOST_TEST"; then
+    printf '%s\n' "Shared Wear send deadline host coverage changed: $deadline_test_contract" >&2
+    exit 1
+  fi
+done
+if [ "$(grep -Fc '$(ROOT)scripts/test-wear-message-send-deadline.sh' "$ROOT_DIR/Makefile")" -ne 1 ]; then
+  printf '%s\n' "Make test must run the shared Wear send deadline host test exactly once." >&2
+  exit 1
+fi
+if ! grep -Fq "Status: Completed" "$SHARED_SEND_DEADLINE_PLAN" || \
+   ! grep -Fq "make check" "$SHARED_SEND_DEADLINE_PLAN" || \
+   ! grep -Fq "hostile mutations" "$SHARED_SEND_DEADLINE_PLAN"; then
+  printf '%s\n' "Shared Wear send deadline plan must record completed verification." >&2
+  exit 1
+fi
+for deadline_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "Wear node lookup and per-node sends consume one shared five-second deadline" "$ROOT_DIR/$deadline_doc"; then
+    printf '%s\n' "$deadline_doc must document the shared Wear send deadline." >&2
+    exit 1
+  fi
+done
 
 if ! grep -Fq "if (nodes == null || nodes.getNodes() == null)" "$MOBILE_ACTIVITY"; then
   printf '%s\n' "Mobile message sends must guard missing connected-node results." >&2

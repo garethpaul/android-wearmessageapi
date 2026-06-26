@@ -17,6 +17,8 @@ The current focus is:
 
 Priority:
 
+- Wear node lookup and per-node sends consume one shared five-second deadline.
+
 - Preserve the mobile-to-wear message flow and `/message` path behavior
 - Keep the watch activity launch path easy to inspect
 - Keep message path matching null-safe and exact across modules

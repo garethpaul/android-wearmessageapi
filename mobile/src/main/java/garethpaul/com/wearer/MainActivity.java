@@ -24,7 +24,8 @@ import java.util.concurrent.TimeUnit;
 public class MainActivity extends Activity implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener {
 
-    private static final long MESSAGE_OPERATION_TIMEOUT_SECONDS = 5L;
+    private static final long MESSAGE_OPERATION_TIMEOUT_NANOS =
+            TimeUnit.SECONDS.toNanos(5L);
 
     private GoogleApiClient mApiClient;
 
@@ -128,9 +129,10 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
                         return;
                     }
 
+                    long messageSendStartedAtNanos = System.nanoTime();
                     NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi
                             .getConnectedNodes(apiClient)
-                            .await(MESSAGE_OPERATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                            .await(MESSAGE_OPERATION_TIMEOUT_NANOS, TimeUnit.NANOSECONDS);
                     if (nodes == null || nodes.getNodes() == null) {
                         return;
                     }
@@ -140,13 +142,21 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
                             continue;
                         }
 
+                        long remainingNanos = MessageSendDeadline.remainingNanos(
+                                messageSendStartedAtNanos,
+                                System.nanoTime(),
+                                MESSAGE_OPERATION_TIMEOUT_NANOS);
+                        if (remainingNanos == 0L) {
+                            break;
+                        }
+
                         MessageApi.SendMessageResult result = Wearable.MessageApi.sendMessage(
                                 apiClient,
                                 node.getId(),
                                 path,
                                 WearMessage.encode(text)).await(
-                                MESSAGE_OPERATION_TIMEOUT_SECONDS,
-                                TimeUnit.SECONDS);
+                                remainingNanos,
+                                TimeUnit.NANOSECONDS);
                         if (result != null && result.getStatus() != null
                                 && result.getStatus().isSuccess()) {
                             messageSent = true;
