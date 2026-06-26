@@ -133,7 +133,8 @@ public class MainActivity extends Activity implements GoogleApiClient.Connection
                     NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi
                             .getConnectedNodes(apiClient)
                             .await(MESSAGE_OPERATION_TIMEOUT_NANOS, TimeUnit.NANOSECONDS);
-                    if (nodes == null || nodes.getNodes() == null) {
+                    if (nodes == null || nodes.getStatus() == null
+                            || !nodes.getStatus().isSuccess() || nodes.getNodes() == null) {
                         return;
                     }
 

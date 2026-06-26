@@ -26,6 +26,7 @@ Helpful reports include:
 
 - Wear node lookup and per-node sends consume one shared five-second deadline,
   so each additional connected node receives only the remaining transport budget.
+- Mobile Wear sends reject missing or unsuccessful connected-node discovery status before node-list access.
 
 - This repository appears to be an Android mobile application or sample. The active security scope is the code and documentation on the default branch.
 - Review found network clients, sockets, web APIs, or service endpoints; changes in those areas should receive security-focused review before merge.

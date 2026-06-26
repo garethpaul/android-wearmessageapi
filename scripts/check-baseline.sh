@@ -20,6 +20,8 @@ MOBILE_ACTIVITY="$ROOT_DIR/mobile/src/main/java/garethpaul/com/wearer/MainActivi
 MESSAGE_SEND_DEADLINE="$ROOT_DIR/mobile/src/main/java/garethpaul/com/wearer/MessageSendDeadline.java"
 MESSAGE_SEND_DEADLINE_HOST_TEST="$ROOT_DIR/scripts/MessageSendDeadlineHostTest.java"
 MESSAGE_SEND_DEADLINE_HOST_RUNNER="$ROOT_DIR/scripts/test-wear-message-send-deadline.sh"
+NODE_DISCOVERY_STATUS_TEST="$ROOT_DIR/scripts/test-wear-node-discovery-status.sh"
+NODE_DISCOVERY_STATUS_MUTATION_TEST="$ROOT_DIR/scripts/test-wear-node-discovery-status-mutations.sh"
 WEAR_ACTIVITY="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/MainActivity.java"
 WEAR_LAUNCHER="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/LauncherActivity.java"
 WEAR_SERVICE="$ROOT_DIR/wear/src/main/java/garethpaul/com/wearer/WearMessageListenerService.java"
@@ -51,6 +53,8 @@ CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 CODEOWNERS="$ROOT_DIR/.github/CODEOWNERS"
 SEND_TIMEOUT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-mobile-send-timeouts.md"
 SHARED_SEND_DEADLINE_PLAN="$ROOT_DIR/docs/plans/2026-06-26-wear-shared-message-send-deadline.md"
+NODE_DISCOVERY_STATUS_DESIGN="$ROOT_DIR/docs/plans/2026-06-26-wear-node-discovery-status-design.md"
+NODE_DISCOVERY_STATUS_PLAN="$ROOT_DIR/docs/plans/2026-06-26-wear-node-discovery-status.md"
 HISTORY_LIMIT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-message-history-limit.md"
 LISTENER_EXPORT_PLAN="$ROOT_DIR/docs/plans/2026-06-12-wear-listener-export-contract.md"
 WRAPPER_PLAN="$ROOT_DIR/docs/plans/2026-06-12-gradle-wrapper-verification.md"
@@ -808,8 +812,40 @@ for deadline_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
   fi
 done
 
-if ! grep -Fq "if (nodes == null || nodes.getNodes() == null)" "$MOBILE_ACTIVITY"; then
-  printf '%s\n' "Mobile message sends must guard missing connected-node results." >&2
+if ! grep -Fq "if (nodes == null || nodes.getStatus() == null" "$MOBILE_ACTIVITY" || \
+   ! grep -Fq "|| !nodes.getStatus().isSuccess() || nodes.getNodes() == null)" "$MOBILE_ACTIVITY"; then
+  printf '%s\n' "Mobile message sends must reject missing or unsuccessful connected-node results." >&2
+  exit 1
+fi
+
+for discovery_artifact in \
+  "$NODE_DISCOVERY_STATUS_TEST" \
+  "$NODE_DISCOVERY_STATUS_MUTATION_TEST" \
+  "$NODE_DISCOVERY_STATUS_DESIGN" \
+  "$NODE_DISCOVERY_STATUS_PLAN"; do
+  if [ ! -f "$discovery_artifact" ]; then
+    printf '%s\n' "Wear node discovery status artifact is missing: $discovery_artifact" >&2
+    exit 1
+  fi
+done
+if [ ! -x "$NODE_DISCOVERY_STATUS_TEST" ] || \
+   [ ! -x "$NODE_DISCOVERY_STATUS_MUTATION_TEST" ] || \
+   [ "$(grep -Fc '$(ROOT)scripts/test-wear-node-discovery-status.sh' "$ROOT_DIR/Makefile")" -ne 1 ] || \
+   [ "$(grep -Fc '$(ROOT)scripts/test-wear-node-discovery-status-mutations.sh' "$ROOT_DIR/Makefile")" -ne 1 ]; then
+  printf '%s\n' "Wear node discovery status tests must be executable and run exactly once." >&2
+  exit 1
+fi
+for discovery_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "Mobile Wear sends reject missing or unsuccessful connected-node discovery status before node-list access" "$ROOT_DIR/$discovery_doc"; then
+    printf '%s\n' "$discovery_doc must document fail-closed connected-node discovery." >&2
+    exit 1
+  fi
+done
+if ! grep -Fq "**Status:** Completed" "$NODE_DISCOVERY_STATUS_PLAN" || \
+   ! grep -Fq "All three hostile mutations were rejected" "$NODE_DISCOVERY_STATUS_PLAN" || \
+   ! grep -Fq "Paired-device delivery was not exercised locally" "$NODE_DISCOVERY_STATUS_PLAN" || \
+   ! grep -Fq "Use the inline fail-closed guard" "$NODE_DISCOVERY_STATUS_DESIGN"; then
+  printf '%s\n' "Wear node discovery status plans must retain design and completed verification evidence." >&2
   exit 1
 fi
 

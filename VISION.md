@@ -18,6 +18,7 @@ The current focus is:
 Priority:
 
 - Wear node lookup and per-node sends consume one shared five-second deadline.
+- Mobile Wear sends reject missing or unsuccessful connected-node discovery status before node-list access.
 
 - Preserve the mobile-to-wear message flow and `/message` path behavior
 - Keep the watch activity launch path easy to inspect
