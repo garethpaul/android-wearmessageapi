@@ -59,12 +59,12 @@ mixed-path cooldown contract, five mixed-path source mutations, two eight-case
 canonical path runs, eight rate-limiter cases, thirteen delivery-gate cases,
 and nine existing delivery-gate hostile mutations.
 
-All thirteen isolated documentation mutations were rejected for the intended
-reason across README identity, commit, connection, and synthetic-payload
-prerequisites; README and matrix signing identity; device-matrix setup; stale
-roadmap items; change history; plan status; and the runtime non-claim.
-Three additional review mutations rejected removal of the signing-certificate
-requirement from the README, device matrix, and plan.
+All fourteen isolated documentation mutations were rejected for the intended
+reason. Eleven covered README identity, commit, connection, and
+synthetic-payload prerequisites; device-matrix setup; stale roadmap items;
+change history; plan status; and the runtime non-claim. Three review mutations
+covered removal of the signing-certificate requirement from the README, device
+matrix, and plan.
 
 No Android SDK was configured locally, so Gradle lint, unit tests, and assembly
 were explicitly skipped. No handset, Wear device, emulator pair, or live Data Layer connection was used.
