@@ -195,6 +195,7 @@ explicit unexecuted rows.
 - The handset ignores queued Google API connection callbacks once its activity is finishing or destroyed.
 - The mobile sends guard missing connected-node results, node IDs, send
   results, and statuses before clearing input.
+- Mobile Wear sends reject missing or unsuccessful connected-node discovery status before node-list access.
 - The mobile sender bounds node lookup and message delivery waits so stalled
   Wear transport operations fall back to the existing send-failure path.
 - Wear node lookup and per-node sends consume one shared five-second deadline,

@@ -73,6 +73,7 @@
 - Wear node lookup and per-node sends consume one shared five-second deadline;
   do not restore a fresh timeout for each connected node or an unbounded
   `PendingResult.await()` call.
+- Mobile Wear sends reject missing or unsuccessful connected-node discovery status before node-list access.
 
 ## Agent workflow
 

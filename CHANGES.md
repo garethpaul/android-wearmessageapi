@@ -1,5 +1,45 @@
 # Android Wear Message API Changes
 
+## 2026-06-26 10:15 - P2 - Reject failed Wear node discovery
+
+### Summary
+The handset sender now validates the connected-node result status before
+reading or iterating its node list.
+
+### Work completed
+- Mobile Wear sends reject missing or unsuccessful connected-node discovery status before node-list access.
+- Added the fail-closed discovery status guard without changing paths, payloads,
+  deadlines, or per-node send behavior.
+- Added a focused source contract and three hostile mutations.
+- Added design and implementation plans plus synchronized maintenance guidance.
+
+### Threads
+- Started: connected-node discovery audit — traced the send flow and official
+  Google Play services result contract.
+- Continued: shared sender deadline — preserved its monotonic budget unchanged.
+- Stopped: `NodeClient` migration — too broad for the focused legacy API fix.
+
+### Files changed
+- `mobile/src/main/java/garethpaul/com/wearer/MainActivity.java` — validates
+  discovery status before node-list access.
+- `scripts/` and `docs/plans/` — add executable contracts and durable evidence.
+
+### Validation
+- Red-first focused contract — failed before implementation, then passed.
+- Hostile discovery mutations — all three rejected.
+- Repository and external-Makefile `make check`, shell syntax, and diff checks passed.
+- Android SDK-backed Gradle lint, tests, and builds skipped locally because no SDK is configured.
+
+### Bugs / findings
+- P2: an unsuccessful discovery result could expose a node list that the sender
+  treated as valid without checking the operation status.
+
+### Blockers
+- Android SDK and paired-device runtime verification remain pending.
+
+### Next action
+- Run the full local and hosted exact-head gates, review, and merge the PR.
+
 ## 2026-06-26
 
 - Wear node lookup and per-node sends consume one shared five-second deadline,
