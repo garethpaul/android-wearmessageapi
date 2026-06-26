@@ -2,9 +2,13 @@
 
 ## 2026-06-25
 
-- Added source-backed paired-device prerequisites, exact-commit install and
-  connection evidence, and privacy-safe manual send/receive steps; removed
+- Added source-backed paired-device prerequisites, exact-commit and matching
+  signing-certificate install requirements, connection evidence, and
+  privacy-safe manual send/receive steps; removed
   completed dependency-pin, behavior-test, and pairing-doc roadmap items.
+- Review caught that matching package names are insufficient without a matching
+  signing identity; the pending-state evidence gate also rejected an imprecise
+  hosted-check sentence before final local validation.
 - Separated delivery cooldown lanes by source node and exact canonical path so
   startup and message events do not throttle each other while replay identity
   remains shared by source and request ID.

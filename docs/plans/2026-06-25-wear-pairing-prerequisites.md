@@ -15,6 +15,8 @@ evidence.
 
 - Document that mobile and Wear builds come from the same exact commit and use
   the shared `garethpaul.com.wearer` application ID.
+- Require a matching signing certificate for the mobile and Wear packages;
+  package-name equality alone does not satisfy the private Data Layer boundary.
 - Record the `wearApp project(':wear')` packaging relationship without assuming
   one modern companion installation mechanism.
 - Require a platform-supported paired handset/Wear or emulator flow with a live
@@ -61,6 +63,19 @@ All eleven isolated documentation mutations were rejected for the intended
 reason across README identity, commit, connection, and synthetic-payload
 prerequisites; device-matrix setup; stale roadmap items; change history; plan
 status; and the runtime non-claim.
+Three additional review mutations rejected removal of the signing-certificate
+requirement from the README, device matrix, and plan.
 
 No Android SDK was configured locally, so Gradle lint, unit tests, and assembly
-were explicitly skipped. No handset, Wear device, emulator pair, or live Data Layer connection was used. Exact-head hosted checks remain pending.
+were explicitly skipped. No handset, Wear device, emulator pair, or live Data Layer connection was used.
+
+Initial implementation commit `3df5daaa8f180b06b7d55bc331c0477f795638f1`
+passed hosted Check and CodeQL. Review then added the required
+matching-signature prerequisite. Exact-head hosted checks remain pending.
+
+## Sources
+
+- Android Developers, Data Layer overview (matching package name and signature):
+  https://developer.android.com/training/wearables/data/overview
+- Android Developers, connecting a watch and phone:
+  https://developer.android.com/training/wearables/get-started/connect-phone

@@ -1647,6 +1647,7 @@ for pairing_contract in \
   "## Paired Device and Emulator Prerequisites" \
   "garethpaul.com.wearer" \
   "same exact commit" \
+  "same signing certificate" \
   "GoogleApiClient" \
   "synthetic payload"; do
   if ! grep -Fq "$pairing_contract" "$README_FILE"; then
@@ -1658,6 +1659,7 @@ done
 for pairing_matrix_contract in \
   "## Pairing Prerequisites" \
   "same application ID" \
+  "matching signing certificate" \
   "wearApp project(':wear')" \
   "platform-supported companion or emulator flow" \
   "Do not treat successful installation as Data Layer connection evidence."; do
@@ -1718,6 +1720,7 @@ esac
 for pairing_plan_contract in \
   "play-services-wearable 7.0.0" \
   "garethpaul.com.wearer" \
+  "matching signing certificate" \
   "GoogleApiClient" \
   "make check" \
   "No handset, Wear device, emulator pair, or live Data Layer connection was used"; do

@@ -59,6 +59,10 @@ application ID `garethpaul.com.wearer`, and the mobile build packages the Wear
 module through `wearApp project(':wear')`. Verify that the handset has the
 mobile app and the paired Wear device or emulator has the matching Wear app;
 the installation mechanism depends on the legacy companion or emulator flow.
+Google Play services also requires the same signing certificate for both
+packages, so use one debug keystore or one release signing identity for the
+mobile and Wear APKs. A matching commit and application ID with different
+signatures cannot form the app-private Data Layer channel.
 
 Before recording message behavior:
 

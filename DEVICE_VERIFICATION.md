@@ -21,6 +21,7 @@ be transferred to a different implementation.
 ## Pairing Prerequisites
 
 - Build both modules from the same exact commit. Their manifests use the same application ID, `garethpaul.com.wearer`.
+- Install mobile and Wear APKs produced with a matching signing certificate; the same package name with different signing identities cannot use the app-private Data Layer channel.
 - The mobile module declares `wearApp project(':wear')`; confirm the matching Wear app is installed through the supported companion flow or directly on the paired emulator when that legacy packaging flow is unavailable.
 - Pair the handset and Wear target through a platform-supported companion or emulator flow with compatible Google Play services Data Layer support.
 - Launch both apps and confirm the mobile `GoogleApiClient` reaches its connected state before attempting a send.
